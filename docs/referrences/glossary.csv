@@ -1,0 +1,38 @@
+term_src,term_tgt,category,asr_pitfalls,eval_weight,is_code_switch,notes
+TechViet Solutions,TechViet Solutions,Entity_Name,"tech việt, tách việt",1.5,FALSE,Tên riêng công ty giữ nguyên
+Aurora Tech Singapore,Aurora Tech Singapore,Entity_Name,"aura tech, âu rô ra",1.5,FALSE,Tên riêng công ty giữ nguyên
+50 tỷ đồng,50 billion VND,Finance_Metric,"50 tỉ, năm chục tỷ",3.0,FALSE,Bắt buộc chuẩn hóa đơn vị tiền tệ quốc tế
+200 nghìn đô la Mỹ,200 thousand US dollars,Finance_Metric,"200 ngàn đô, hai trăm k",3.0,FALSE,Trọng số cao do sai số liệu sẽ hỏng hợp đồng
+10%,10%,Finance_Metric,"mười phần trăm, ten percent",2.0,FALSE,Số liệu phần trăm
+15%,15%,Finance_Metric,"mười lăm phần trăm",2.0,FALSE,Số liệu phần trăm
+20%,20%,Finance_Metric,"hai mươi phần trăm",2.0,FALSE,Số liệu phần trăm
+12 tháng,12 months,Time_Metric,"mười hai tháng, 1 năm",1.0,FALSE,Định dạng thời gian
+18 tháng,18 months,Time_Metric,"mười tám tháng",1.0,FALSE,Định dạng thời gian
+6 tháng,6-month,Time_Metric,"sáu tháng",1.0,FALSE,Định dạng thời gian (tính từ)
+2 năm,2-year,Time_Metric,"hai năm",1.0,FALSE,Định dạng thời gian (tính từ)
+15 tháng 8,August 15th,Date_Format,"mười lăm tháng tám",1.5,FALSE,Chuẩn hóa ngày tháng Anh Mỹ
+1 tháng 9,September 1st,Date_Format,"mùng một tháng chín",1.5,FALSE,Chuẩn hóa ngày tháng Anh Mỹ
+9 giờ sáng,9 AM,Time_Format,"chín giờ sáng",1.0,FALSE,Định dạng 12h
+API REST,REST API,Tech_Term,"a pi i rết, api red",2.0,FALSE,Bẫy đảo trật tự từ tiếng Việt sang Anh
+webhook,webhooks,Tech_Term,"web húc, quét búc",2.0,TRUE,Từ kỹ thuật chuyên ngành
+AES-256,AES-256,Tech_Term,"a e s hai năm sáu, aét 256",2.5,FALSE,Mã hóa kỹ thuật số
+200 mili giây,200 milliseconds,Tech_Metric,"200 ms, hai trăm mi li giây",2.0,FALSE,Chỉ số đo lường hiệu năng
+10 nghìn,10 thousand,Tech_Metric,"mười ngàn, 10k",1.0,FALSE,Số lượng yêu cầu
+24/7,24/7,Business_Term,"hai tư trên bảy",1.0,FALSE,Thuật ngữ dịch vụ
+on-premise,tại chỗ,Tech_Term,"on phờ rem, on pre mịt",2.0,TRUE,Từ tiếng Anh mượn cần dịch hoặc giữ nguyên
+đường hàng không,air freight,Logistics_Term,"máy bay, bay",1.5,FALSE,Dịch đúng thuật ngữ chuyên ngành vận tải
+phụ phí 5%,5% surcharge,Finance_Metric,"phí thêm 5%, cộng 5%",2.5,FALSE,Bẫy từ vựng hợp đồng
+mã tracking,tracking number,Logistics_Term,"mã trắc kinh, mã check",2.0,TRUE,Code-switching phổ biến ngành vận tải
+review,reviewed,Code_Switching,"ri viu, re viu",1.0,TRUE,Chia động từ quá khứ
+budget,budget,Code_Switching,"bắt diệt, bớt gịt",1.5,TRUE,Danh từ tài chính Code-switching
+project,project,Code_Switching,"pờ rô rếch",1.0,TRUE,Danh từ Code-switching
+action items,action items,Code_Switching,"ác sình ai tầm",2.5,TRUE,Bẫy phát âm nuốt âm cuối
+urgent,urgent,Code_Switching,"ơ rần, ơ dừn",1.5,TRUE,Tính từ Code-switching
+support,supports,Code_Switching,"súp pọt, sáp bọt",1.0,TRUE,Chia động từ ngôi thứ 3 số ít
+scale,scale,Code_Switching,"sờ keo",1.5,TRUE,Động từ IT
+handle,handle,Code_Switching,"hen đò",1.0,TRUE,Động từ IT
+Team legal,legal team,Code_Switching,"tim li gồ",2.0,TRUE,Bẫy đảo trật tự từ
+disaster recovery,khôi phục sau sự cố,Tech_Term,"rì co vơ ri",2.5,FALSE,Thuật ngữ dài
+confidentiality clause,điều khoản bảo mật,Legal_Term,"con fi đen sồ",3.0,FALSE,Thuật ngữ pháp lý trọng số cao
+arbitration clause,điều khoản trọng tài,Legal_Term,"a bi trây sần",3.0,FALSE,Thuật ngữ pháp lý trọng số cao
+Payment terms,payment terms,Business_Term,"pay mần tơm",2.0,TRUE,Code-switching hợp đồng

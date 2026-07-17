@@ -8,7 +8,9 @@ __pycache__/
 apps/web/node_modules/
 apps/web/dist/
 apps/web/*.tsbuildinfo
-docs/
+# Track docs (sprint specs, references) — but not the AI briefs or the large challenge PDF.
+docs/AI/
+docs/requirements/*.pdf
 /.venv
 models/
 .cache/
