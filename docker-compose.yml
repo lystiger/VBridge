@@ -3,9 +3,18 @@ services:
     build:
       context: .
       dockerfile: docker/api.Dockerfile
+      args:
+        # Lightweight default; use VBRIDGE_EXTRAS=[vad,asr,mt] for an inference image.
+        VBRIDGE_EXTRAS: ${VBRIDGE_EXTRAS:-}
     environment:
       VBRIDGE_AUDIO_OUTPUT_DIR: /data/audio
       VBRIDGE_CORS_ORIGINS: http://localhost:5173
+      VBRIDGE_INFERENCE_BACKEND: ${VBRIDGE_INFERENCE_BACKEND:-cpu}
+      VBRIDGE_ASR_MODE: ${VBRIDGE_ASR_MODE:-mock}
+      VBRIDGE_MT_MODE: ${VBRIDGE_MT_MODE:-mock}
+      VBRIDGE_TTS_MODE: mock
+      # Energy fallback keeps the base image small; inference images should select silero.
+      VBRIDGE_VAD_MODE: ${VBRIDGE_VAD_MODE:-energy}
     ports: ["8000:8000"]
     volumes: ["audio-data:/data/audio"]
     healthcheck:

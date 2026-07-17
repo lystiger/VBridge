@@ -15,6 +15,16 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+audio = [
+  "av>=18,<19",
+  "librosa>=0.11,<1",
+  "pydub>=0.25,<1",
+  "soundfile>=0.14,<1",
+]
+asr = ["faster-whisper>=1.1,<2"]
+mt = ["sentencepiece>=0.2,<1", "torch>=2.5,<3", "transformers>=4.47,<5"]
+vad = ["onnxruntime>=1.20,<2", "silero-vad>=6.2,<7"]
+eval = ["sacrebleu>=2.5,<3"]
 dev = [
   "httpx>=0.27,<1",
   "pytest>=8.3,<9",

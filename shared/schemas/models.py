@@ -77,3 +77,10 @@ class MetricsResponse(BaseModel):
     translation_ms: float = Field(ge=0)
     tts_ms: float = Field(ge=0)
     total_pipeline_ms: float = Field(ge=0)
+    backend: str = "cpu"
+    asr_model: str = "mock"
+    mt_model: str = "mock"
+    asr_mode: str = "mock"
+    mt_mode: str = "mock"
+    timing_note: str = "Tiny-model / CPU timings are not representative of the target card."
+    recent_utterances: list[dict[str, float | str]] = []

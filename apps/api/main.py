@@ -1,14 +1,26 @@
+import wave
 from pathlib import Path
 from typing import Annotated
 from uuid import uuid4
 
-from fastapi import Depends, FastAPI, File, Form, Request, UploadFile
+from fastapi import (
+    Depends,
+    FastAPI,
+    File,
+    Form,
+    Request,
+    UploadFile,
+    WebSocket,
+    WebSocketDisconnect,
+)
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from apps.api.dependencies import get_metrics_collector, get_pipeline_service
 from services.metrics import MetricsCollector
 from services.pipeline import PipelineService
+from services.streaming import StreamingPipelineService
+from services.vad import EnergyVAD, SileroVAD
 from shared.config import get_settings
 from shared.logging import configure_logging
 from shared.schemas import (
@@ -34,6 +46,44 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.mount("/audio", StaticFiles(directory=settings.audio_output_dir), name="audio")
+
+
+def wav_duration_ms(path: str) -> float | None:
+    try:
+        with wave.open(path, "rb") as audio:
+            return audio.getnframes() / audio.getframerate() * 1000
+    except (OSError, EOFError, wave.Error):
+        return None
+
+
+@app.websocket("/pipeline/stream")
+async def stream_pipeline(websocket: WebSocket) -> None:
+    await websocket.accept()
+    session_id = websocket.query_params.get("session_id", str(uuid4()))
+    language = websocket.query_params.get("language", "vi")
+    vad = (
+        SileroVAD(settings.vad_threshold, settings.vad_min_silence_ms)
+        if settings.vad_mode == "silero"
+        else EnergyVAD()
+    )
+    service = StreamingPipelineService(
+        get_pipeline_service(),
+        settings.audio_output_dir / "streams",
+        vad,
+        settings.partial_interval_chunks,
+        get_metrics_collector(),
+    )
+
+    async def receive() -> bytes | None:
+        try:
+            return await websocket.receive_bytes()
+        except WebSocketDisconnect:
+            return None
+
+    async def send(event: dict[str, object]) -> None:
+        await websocket.send_json(event)
+
+    await service.run(receive, send, session_id, language)
 
 
 @app.middleware("http")
@@ -86,7 +136,7 @@ async def process_pipeline(
     collector: Annotated[MetricsCollector, Depends(get_metrics_collector)],
 ) -> PipelineResponse:
     result = await pipeline.process(request, raw_request.state.request_id)
-    await collector.record(result)
+    await collector.record(result, wav_duration_ms(request.audio_path))
     return result
 
 

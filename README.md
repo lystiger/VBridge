@@ -55,3 +55,17 @@ pytest
 cd apps/web && npm run build
 docker compose build
 ```
+
+## Sprint 02 inference modes
+
+The default stack remains lightweight and mocked. Local real-model evaluation:
+
+```powershell
+pip install -e ".[audio,asr,mt,vad,eval,dev]"
+$env:VBRIDGE_ASR_MODE="real"
+$env:VBRIDGE_MT_MODE="real"
+$env:VBRIDGE_VAD_MODE="silero"
+python scripts/eval/run.py --asr-mode real --mt-mode real
+```
+
+The selected defaults are `Systran/faster-whisper-base` and `facebook/nllb-200-distilled-600M`. CPU evaluation numbers are wiring evidence only and are not representative of the target RTX 4060.
