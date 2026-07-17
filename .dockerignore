@@ -1,0 +1,12 @@
+.git
+.github
+.coverage
+.pytest_cache
+.ruff_cache
+.runtime
+**/__pycache__
+**/*.pyc
+apps/web/node_modules
+apps/web/dist
+tests
+docs

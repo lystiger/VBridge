@@ -1,0 +1,11 @@
+.env
+.coverage
+.pytest_cache/
+.ruff_cache/
+.runtime/
+__pycache__/
+*.py[cod]
+apps/web/node_modules/
+apps/web/dist/
+apps/web/*.tsbuildinfo
+docs/
