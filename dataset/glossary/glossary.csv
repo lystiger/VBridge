@@ -1,59 +1,60 @@
-term_src,term_tgt,category,asr_pitfalls,eval_weight,is_code_switch,notes
-TechViet Solutions,TechViet Solutions,Entity_Name,"tech việt, tách việt",1.5,FALSE,Tên riêng công ty giữ nguyên
-Aurora Tech Singapore,Aurora Tech Singapore,Entity_Name,"aura tech, âu rô ra",1.5,FALSE,Tên riêng công ty giữ nguyên
-50 tỷ đồng,50 billion VND,Finance_Metric,"50 tỉ, năm chục tỷ",3.0,FALSE,Bắt buộc chuẩn hóa đơn vị tiền tệ quốc tế
-200 nghìn đô la Mỹ,200 thousand US dollars,Finance_Metric,"200 ngàn đô, hai trăm k",3.0,FALSE,Trọng số cao do sai số liệu sẽ hỏng hợp đồng
-10%,10%,Finance_Metric,"mười phần trăm, ten percent",2.0,FALSE,Số liệu phần trăm
-15%,15%,Finance_Metric,mười lăm phần trăm,2.0,FALSE,Số liệu phần trăm
-20%,20%,Finance_Metric,hai mươi phần trăm,2.0,FALSE,Số liệu phần trăm
-12 tháng,12 months,Time_Metric,"mười hai tháng, 1 năm",1.0,FALSE,Định dạng thời gian
-18 tháng,18 months,Time_Metric,mười tám tháng,1.0,FALSE,Định dạng thời gian
-6 tháng,6-month,Time_Metric,sáu tháng,1.0,FALSE,Định dạng thời gian (tính từ)
-2 năm,2-year,Time_Metric,hai năm,1.0,FALSE,Định dạng thời gian (tính từ)
-15 tháng 8,August 15th,Date_Format,mười lăm tháng tám,1.5,FALSE,Chuẩn hóa ngày tháng Anh Mỹ
-1 tháng 9,September 1st,Date_Format,mùng một tháng chín,1.5,FALSE,Chuẩn hóa ngày tháng Anh Mỹ
-9 giờ sáng,9 AM,Time_Format,chín giờ sáng,1.0,FALSE,Định dạng 12h
-API REST,REST API,Tech_Term,"a pi i rết, api red",2.0,FALSE,Bẫy đảo trật tự từ tiếng Việt sang Anh
-webhook,webhooks,Tech_Term,"web húc, quét búc",2.0,TRUE,Từ kỹ thuật chuyên ngành
-AES-256,AES-256,Tech_Term,"a e s hai năm sáu, aét 256",2.5,FALSE,Mã hóa kỹ thuật số
-200 mili giây,200 milliseconds,Tech_Metric,"200 ms, hai trăm mi li giây",2.0,FALSE,Chỉ số đo lường hiệu năng
-10 nghìn,10 thousand,Tech_Metric,"mười ngàn, 10k",1.0,FALSE,Số lượng yêu cầu
-24/7,24/7,Business_Term,hai tư trên bảy,1.0,FALSE,Thuật ngữ dịch vụ
-on-premise,tại chỗ,Tech_Term,"on phờ rem, on pre mịt",2.0,TRUE,Từ tiếng Anh mượn cần dịch hoặc giữ nguyên
-đường hàng không,air freight,Logistics_Term,"máy bay, bay",1.5,FALSE,Dịch đúng thuật ngữ chuyên ngành vận tải
-phụ phí 5%,5% surcharge,Finance_Metric,"phí thêm 5%, cộng 5%",2.5,FALSE,Bẫy từ vựng hợp đồng
-mã tracking,tracking number,Logistics_Term,"mã trắc kinh, mã check",2.0,TRUE,Code-switching phổ biến ngành vận tải
-review,reviewed,Code_Switching,"ri viu, re viu",1.0,TRUE,Chia động từ quá khứ
-budget,budget,Code_Switching,"bắt diệt, bớt gịt",1.5,TRUE,Danh từ tài chính Code-switching
-project,project,Code_Switching,pờ rô rếch,1.0,TRUE,Danh từ Code-switching
-action items,action items,Code_Switching,ác sình ai tầm,2.5,TRUE,Bẫy phát âm nuốt âm cuối
-urgent,urgent,Code_Switching,"ơ rần, ơ dừn",1.5,TRUE,Tính từ Code-switching
-support,supports,Code_Switching,"súp pọt, sáp bọt",1.0,TRUE,Chia động từ ngôi thứ 3 số ít
-scale,scale,Code_Switching,sờ keo,1.5,TRUE,Động từ IT
-handle,handle,Code_Switching,hen đò,1.0,TRUE,Động từ IT
-Team legal,legal team,Code_Switching,tim li gồ,2.0,TRUE,Bẫy đảo trật tự từ
-disaster recovery,khôi phục sau sự cố,Tech_Term,rì co vơ ri,2.5,FALSE,Thuật ngữ dài
-confidentiality clause,điều khoản bảo mật,Legal_Term,con fi đen sồ,3.0,FALSE,Thuật ngữ pháp lý trọng số cao
-arbitration clause,điều khoản trọng tài,Legal_Term,a bi trây sần,3.0,FALSE,Thuật ngữ pháp lý trọng số cao
-Payment terms,payment terms,Business_Term,pay mần tơm,2.0,TRUE,Code-switching hợp đồng
-2018,2018,Quantity_Metric,,1.0,FALSE,Bổ sung từ bộ test_dialogues đoạn 01
-120 nhân viên,120 employees,Quantity_Metric,,1.0,FALSE,Bổ sung từ bộ test_dialogues đoạn 01
-40 clients,40 khách hàng,Business_Term,,1.5,FALSE,Bổ sung từ bộ test_dialogues đoạn 02
-6 countries,6 quốc gia,Business_Term,,1.5,FALSE,Bổ sung từ bộ test_dialogues đoạn 02
-2 million transactions,2 triệu giao dịch,Finance_Metric,,3.0,FALSE,Bổ sung từ bộ test_dialogues đoạn 02
-500 units,500 đơn vị,Quantity_Metric,,1.0,FALSE,Bổ sung từ bộ test_dialogues đoạn 04
-9 AM,9 giờ sáng,Time_Format,,1.0,FALSE,Bổ sung từ bộ test_dialogues đoạn 04
-revised proposal,bản đề xuất đã chỉnh sửa,Business_Term,,2.0,FALSE,Bổ sung từ bộ test_dialogues đoạn 04
-30%,30%,Finance_Metric,,2.0,FALSE,Bổ sung từ bộ test_dialogues đoạn 05
-70%,70%,Finance_Metric,,2.0,FALSE,Bổ sung từ bộ test_dialogues đoạn 05
-0.5%,0.5%,Finance_Metric,,2.0,FALSE,Bổ sung từ bộ test_dialogues đoạn 05
-5 years,5 năm,Time_Metric,,1.0,FALSE,Bổ sung từ bộ test_dialogues đoạn 06
-60 days,60 ngày,Time_Metric,,1.0,FALSE,Bổ sung từ bộ test_dialogues đoạn 06
-6 hours,6 giờ,Time_Metric,,1.0,FALSE,Bổ sung từ bộ test_dialogues đoạn 08
-99.9% uptime,thời gian hoạt động 99.9%,Finance_Metric,,2.0,FALSE,Bổ sung từ bộ test_dialogues đoạn 08
-500 sản phẩm,500 units,Quantity_Metric,,1.0,FALSE,Bổ sung từ bộ test_dialogues đoạn 09
-3 tuần,3 weeks,Time_Metric,,1.0,FALSE,Bổ sung từ bộ test_dialogues đoạn 09
-10 ngày,10 days,Time_Metric,,1.0,FALSE,Bổ sung từ bộ test_dialogues đoạn 09
-September 5th,5 tháng 9,Date_Format,,1.5,FALSE,Bổ sung từ bộ test_dialogues đoạn 10
-air freight,đường hàng không,Logistics_Term,,1.5,FALSE,Bổ sung từ bộ test_dialogues đoạn 10
-24 hours,24 giờ,Time_Metric,,1.0,FALSE,Bổ sung từ bộ test_dialogues đoạn 10
+term_src,term_tgt,category,eval_weight,must_preserve,asr_pitfalls,is_code_switch,notes
+TechViet Solutions,TechViet Solutions,Entity_Name,1.5,TRUE,"tech việt, tách việt",FALSE,Tên riêng công ty giữ nguyên
+Aurora Tech Singapore,Aurora Tech Singapore,Entity_Name,1.5,TRUE,"aura tech, âu rô ra",FALSE,Tên riêng công ty giữ nguyên
+50 tỷ đồng,50 billion VND,Finance_Metric,3.0,TRUE,"50 tỉ, năm chục tỷ",FALSE,Bắt buộc chuẩn hóa đơn vị tiền tệ quốc tế
+200 nghìn đô la Mỹ,200 thousand US dollars,Finance_Metric,3.0,TRUE,"200 ngàn đô, hai trăm k",FALSE,Trọng số cao do sai số liệu sẽ hỏng hợp đồng
+10%,10%,Finance_Metric,2.0,TRUE,"mười phần trăm, ten percent",FALSE,Số liệu phần trăm
+15%,15%,Finance_Metric,2.0,TRUE,mười lăm phần trăm,FALSE,Số liệu phần trăm
+20%,20%,Finance_Metric,2.0,TRUE,hai mươi phần trăm,FALSE,Số liệu phần trăm
+12 tháng,12 months,Time_Metric,1.0,TRUE,"mười hai tháng, 1 năm",FALSE,Định dạng thời gian
+18 tháng,18 months,Time_Metric,1.0,TRUE,mười tám tháng,FALSE,Định dạng thời gian
+6 tháng,6-month,Time_Metric,1.0,TRUE,sáu tháng,FALSE,Định dạng thời gian (tính từ)
+2 năm,2-year,Time_Metric,1.0,TRUE,hai năm,FALSE,Định dạng thời gian (tính từ)
+15 tháng 8,August 15th,Date_Format,1.5,TRUE,mười lăm tháng tám,FALSE,Chuẩn hóa ngày tháng Anh Mỹ
+1 tháng 9,September 1st,Date_Format,1.5,TRUE,mùng một tháng chín,FALSE,Chuẩn hóa ngày tháng Anh Mỹ
+9 giờ sáng,9 AM,Time_Format,1.0,TRUE,chín giờ sáng,FALSE,Định dạng 12h
+API REST,REST API,Tech_Term,2.0,TRUE,"a pi i rết, api red",FALSE,Bẫy đảo trật tự từ tiếng Việt sang Anh
+webhook,webhooks,Tech_Term,2.0,TRUE,"web húc, quét búc",TRUE,Từ kỹ thuật chuyên ngành
+AES-256,AES-256,Tech_Term,2.5,TRUE,"a e s hai năm sáu, aét 256",FALSE,Mã hóa kỹ thuật số
+200 mili giây,200 milliseconds,Tech_Metric,2.0,TRUE,"200 ms, hai trăm mi li giây",FALSE,Chỉ số đo lường hiệu năng
+10 nghìn,10 thousand,Tech_Metric,1.0,TRUE,"mười ngàn, 10k",FALSE,Số lượng yêu cầu
+24/7,24/7,Business_Term,1.0,TRUE,hai tư trên bảy,FALSE,Thuật ngữ dịch vụ
+on-premise,tại chỗ,Tech_Term,2.0,TRUE,"on phờ rem, on pre mịt",TRUE,Từ tiếng Anh mượn cần dịch hoặc giữ nguyên
+đường hàng không,air freight,Logistics_Term,1.5,TRUE,"máy bay, bay",FALSE,Dịch đúng thuật ngữ chuyên ngành vận tải
+phụ phí 5%,5% surcharge,Finance_Metric,2.5,TRUE,"phí thêm 5%, cộng 5%",FALSE,Bẫy từ vựng hợp đồng
+mã tracking,tracking number,Logistics_Term,2.0,TRUE,"mã trắc kinh, mã check",TRUE,Code-switching phổ biến ngành vận tải
+review,reviewed,Code_Switching,1.0,TRUE,"ri viu, re viu",TRUE,Chia động từ quá khứ
+budget,budget,Code_Switching,1.5,TRUE,"bắt diệt, bớt gịt",TRUE,Danh từ tài chính Code-switching
+project,project,Code_Switching,1.0,TRUE,pờ rô rếch,TRUE,Danh từ Code-switching
+action items,action items,Code_Switching,2.5,TRUE,ác sình ai tầm,TRUE,Bẫy phát âm nuốt âm cuối
+urgent,urgent,Code_Switching,1.5,TRUE,"ơ rần, ơ dừn",TRUE,Tính từ Code-switching
+support,supports,Code_Switching,1.0,TRUE,"súp pọt, sáp bọt",TRUE,Chia động từ ngôi thứ 3 số ít
+scale,scale,Code_Switching,1.5,TRUE,sờ keo,TRUE,Động từ IT
+handle,handle,Code_Switching,1.0,TRUE,hen đò,TRUE,Động từ IT
+Team legal,legal team,Code_Switching,2.0,TRUE,tim li gồ,TRUE,Bẫy đảo trật tự từ
+disaster recovery,khôi phục sau sự cố,Tech_Term,2.5,TRUE,rì co vơ ri,FALSE,Thuật ngữ dài
+confidentiality clause,điều khoản bảo mật,Legal_Term,3.0,TRUE,con fi đen sồ,FALSE,Thuật ngữ pháp lý trọng số cao
+arbitration clause,điều khoản trọng tài,Legal_Term,4.0,TRUE,a bi trây sần,FALSE,Thuật ngữ pháp lý trọng số cao
+Payment terms,payment terms,Business_Term,2.0,TRUE,pay mần tơm,TRUE,Code-switching hợp đồng
+2018,2018,Quantity_Metric,1.0,TRUE,,FALSE,Bổ sung từ bộ test_dialogues đoạn 01
+120 nhân viên,120 employees,Quantity_Metric,1.0,TRUE,,FALSE,Bổ sung từ bộ test_dialogues đoạn 01
+40 clients,40 khách hàng,Business_Term,1.5,TRUE,,FALSE,Bổ sung từ bộ test_dialogues đoạn 02
+6 countries,6 quốc gia,Business_Term,1.5,TRUE,,FALSE,Bổ sung từ bộ test_dialogues đoạn 02
+2 million transactions,2 triệu giao dịch,Finance_Metric,3.0,TRUE,,FALSE,Bổ sung từ bộ test_dialogues đoạn 02
+500 units,500 đơn vị,Quantity_Metric,1.0,TRUE,,FALSE,Bổ sung từ bộ test_dialogues đoạn 04
+9 AM,9 giờ sáng,Time_Format,1.0,TRUE,,FALSE,Bổ sung từ bộ test_dialogues đoạn 04
+revised proposal,bản đề xuất đã chỉnh sửa,Business_Term,2.0,TRUE,,FALSE,Bổ sung từ bộ test_dialogues đoạn 04
+30%,30%,Finance_Metric,2.0,TRUE,,FALSE,Bổ sung từ bộ test_dialogues đoạn 05
+70%,70%,Finance_Metric,2.0,TRUE,,FALSE,Bổ sung từ bộ test_dialogues đoạn 05
+0.5%,0.5%,Finance_Metric,2.0,TRUE,,FALSE,Bổ sung từ bộ test_dialogues đoạn 05
+5 years,5 năm,Time_Metric,1.0,TRUE,,FALSE,Bổ sung từ bộ test_dialogues đoạn 06
+60 days,60 ngày,Time_Metric,1.0,TRUE,,FALSE,Bổ sung từ bộ test_dialogues đoạn 06
+6 hours,6 giờ,Time_Metric,1.0,TRUE,,FALSE,Bổ sung từ bộ test_dialogues đoạn 08
+99.9% uptime,thời gian hoạt động 99.9%,Finance_Metric,2.0,TRUE,,FALSE,Bổ sung từ bộ test_dialogues đoạn 08
+500 sản phẩm,500 units,Quantity_Metric,1.0,TRUE,,FALSE,Bổ sung từ bộ test_dialogues đoạn 09
+3 tuần,3 weeks,Time_Metric,1.0,TRUE,,FALSE,Bổ sung từ bộ test_dialogues đoạn 09
+10 ngày,10 days,Time_Metric,1.0,TRUE,,FALSE,Bổ sung từ bộ test_dialogues đoạn 09
+September 5th,5 tháng 9,Date_Format,1.5,TRUE,,FALSE,Bổ sung từ bộ test_dialogues đoạn 10
+air freight,đường hàng không,Logistics_Term,1.5,TRUE,,FALSE,Bổ sung từ bộ test_dialogues đoạn 10
+24 hours,24 giờ,Time_Metric,1.0,TRUE,,FALSE,Bổ sung từ bộ test_dialogues đoạn 10
+SLA,SLA,Tech_Term,3.0,TRUE,ét el ai,TRUE,Cam kết mức độ dịch vụ
