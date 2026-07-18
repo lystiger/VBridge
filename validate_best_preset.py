@@ -7,15 +7,15 @@ from faster_whisper import WhisperModel
 
 # Cấu hình chốt sử dụng để Validate
 CHOSEN_VAD = {
-    "threshold": 0.65, 
+    "threshold": 0.65,
     "min_silence_duration_ms": 900,
-    "min_speech_duration_ms": 300, 
+    "min_speech_duration_ms": 300,
     "speech_pad_ms": 200,
 }
 CHOSEN_WHISPER = {
-    "beam_size": 1, 
+    "beam_size": 1,
     "no_speech_threshold": 0.75,
-    "log_prob_threshold": -0.8, 
+    "log_prob_threshold": -0.8,
     "compression_ratio_threshold": 2.2,
 }
 
@@ -44,7 +44,9 @@ def word_error_rate(hyp: str, ref: str) -> float:
     for i in range(1, len(r) + 1):
         for j in range(1, len(h) + 1):
             cost = 0 if r[i - 1] == h[j - 1] else 1
-            d[i][j] = min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + cost)
+            d[i][j] = min(
+                d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + cost
+            )
     return d[len(r)][len(h)] / len(r)
 
 
@@ -72,12 +74,14 @@ def load_references() -> dict:
 def collect_all_files() -> list[dict]:
     files = []
     for f in sorted(CLEAN_DIR.glob("*.wav")):
-        files.append({
-    "path": f, 
-    "file_id": extract_id(f.stem), 
-    "noise_type": "clean", 
-    "level": "clean"
-})
+        files.append(
+            {
+                "path": f,
+                "file_id": extract_id(f.stem),
+                "noise_type": "clean",
+                "level": "clean",
+            }
+        )
     for noise_type_dir in sorted(NOISY_DIR.iterdir()):
         if not noise_type_dir.is_dir():
             continue
@@ -85,10 +89,14 @@ def collect_all_files() -> list[dict]:
             if not level_dir.is_dir():
                 continue
             for f in sorted(level_dir.glob("*.wav")):
-                files.append({
-                    "path": f, "file_id": extract_id(f.stem),
-                    "noise_type": noise_type_dir.name, "level": level_dir.name,
-                })
+                files.append(
+                    {
+                        "path": f,
+                        "file_id": extract_id(f.stem),
+                        "noise_type": noise_type_dir.name,
+                        "level": level_dir.name,
+                    }
+                )
     return files
 
 
@@ -109,11 +117,16 @@ def main():
 
         t0 = time.time()
         segments_gen, _ = model.transcribe(
-            str(item["path"]), language=lang, vad_filter=True,
-            vad_parameters=CHOSEN_VAD, beam_size=CHOSEN_WHISPER["beam_size"],
+            str(item["path"]),
+            language=lang,
+            vad_filter=True,
+            vad_parameters=CHOSEN_VAD,
+            beam_size=CHOSEN_WHISPER["beam_size"],
             no_speech_threshold=CHOSEN_WHISPER["no_speech_threshold"],
             log_prob_threshold=CHOSEN_WHISPER["log_prob_threshold"],
-            compression_ratio_threshold=CHOSEN_WHISPER["compression_ratio_threshold"],
+            compression_ratio_threshold=CHOSEN_WHISPER[
+                "compression_ratio_threshold"
+            ],
         )
         segments = list(segments_gen)
         latency = time.time() - t0
@@ -122,10 +135,15 @@ def main():
         wer = word_error_rate(text, ref_text)
         accuracy = max(0.0, 1 - wer) * 100
 
-        rows.append({
-            "file_id": file_id, "noise_type": item["noise_type"], "level": item["level"],
-            "accuracy_pct": round(accuracy, 1), "latency_s": round(latency, 3),
-        })
+        rows.append(
+            {
+                "file_id": file_id,
+                "noise_type": item["noise_type"],
+                "level": item["level"],
+                "accuracy_pct": round(accuracy, 1),
+                "latency_s": round(latency, 3),
+            }
+        )
         if i % 20 == 0:
             print(f"  ...đã xử lý {i}/{len(all_files)}")
 
@@ -149,7 +167,10 @@ def main():
     print(f"Độ trễ trung bình: {overall_latency:.2f}s")
     print(f"\nTheo mức độ nhiễu:\n{by_level.to_string()}")
     print(f"\nTheo loại nhiễu:\n{by_type.to_string()}")
-    print("\nĐã lưu final_validation_detail.csv — dùng số liệu này cho slide/báo cáo cuối cùng.")
+    print(
+        "\nĐã lưu final_validation_detail.csv — dùng số liệu "
+        "này cho slide/báo cáo cuối cùng."
+    )
 
 
 if __name__ == "__main__":
