@@ -1,6 +1,9 @@
+import asyncio
 import wave
+from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from pathlib import Path
+from time import perf_counter
 from typing import Annotated
 from uuid import uuid4
 
@@ -31,9 +34,12 @@ from services.metrics import MetricsCollector
 from services.pipeline import PipelineService
 from services.room_tokens import ExpiredTokenError, InvalidTokenError, RoomTokenService
 from services.rooms import (
+    DuplicateEventError,
     InMemoryRoomManager,
     InvalidRoomCodeError,
+    OutOfOrderEventError,
     Participant,
+    ParticipantNotFoundError,
     Room,
     RoomFullError,
     RoomNotFoundError,
@@ -47,7 +53,7 @@ from services.sessions import (
 from services.streaming import StreamingPipelineService
 from services.vad import EnergyVAD, SileroVAD
 from shared.config import get_settings
-from shared.logging import configure_logging
+from shared.logging import configure_logging, log_event
 from shared.schemas import (
     ASRResponse,
     AudioRequest,
@@ -59,6 +65,7 @@ from shared.schemas import (
     ParticipantResponse,
     PipelineResponse,
     RoomAccessResponse,
+    RoomEvent,
     RoomStateResponse,
     SessionCreateResponse,
     TranslationRequest,
@@ -71,7 +78,48 @@ from shared.schemas import (
 settings = get_settings()
 settings.audio_output_dir.mkdir(parents=True, exist_ok=True)
 configure_logging()
-app = FastAPI(title=settings.app_name, version="0.1.0")
+
+
+async def refresh_room_gauges(
+    manager: InMemoryRoomManager, collector: MetricsCollector
+) -> None:
+    active, connected = await manager.counts()
+    await collector.set_room_gauges(active, connected)
+
+
+async def cleanup_rooms(stop: asyncio.Event) -> None:
+    manager = get_room_manager()
+    collector = get_metrics_collector()
+    while not stop.is_set():
+        try:
+            await asyncio.wait_for(stop.wait(), timeout=settings.room_cleanup_interval_seconds)
+            continue
+        except TimeoutError:
+            pass
+        expired = await manager.expire_inactive_rooms()
+        for room in expired:
+            await collector.increment_room("rooms_expired_total")
+            for participant in room.participants.values():
+                if participant.websocket is not None:
+                    try:
+                        await participant.websocket.close(code=4005, reason="room expired")
+                    except RuntimeError:
+                        pass
+        await refresh_room_gauges(manager, collector)
+
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):  # type: ignore[no-untyped-def]
+    stop = asyncio.Event()
+    cleanup_task = asyncio.create_task(cleanup_rooms(stop), name="room-cleanup")
+    try:
+        yield
+    finally:
+        stop.set()
+        await cleanup_task
+
+
+app = FastAPI(title=settings.app_name, version="0.1.0", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origin_list,
@@ -79,6 +127,42 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.mount("/audio", StaticFiles(directory=settings.audio_output_dir), name="audio")
+
+WS_INVALID_TOKEN = 4001
+WS_ROOM_NOT_FOUND = 4002
+WS_ROOM_CLOSED = 4004
+WS_PARTICIPANT_NOT_FOUND = 4006
+WS_PROTOCOL_VIOLATION = 4007
+
+
+def event_envelope(
+    event_type: str,
+    room_id: str,
+    participant_id: str = "system",
+    sequence: int = 0,
+    payload: dict[str, object] | None = None,
+    event_id: str | None = None,
+) -> dict[str, object]:
+    return {
+        "type": event_type,
+        "event_id": event_id or str(uuid4()),
+        "room_id": room_id,
+        "participant_id": participant_id,
+        "sequence": sequence,
+        "timestamp": datetime.now(UTC).isoformat(),
+        "payload": payload or {},
+    }
+
+
+def error_event(
+    room_id: str, code: str, message: str, sequence: int = 0, retryable: bool = False
+) -> dict[str, object]:
+    return event_envelope(
+        "error",
+        room_id,
+        sequence=sequence,
+        payload={"code": code, "message": message, "retryable": retryable},
+    )
 
 
 @app.post("/sessions", response_model=SessionCreateResponse, status_code=201)
@@ -191,10 +275,13 @@ async def create_room(
     request: CreateRoomRequest,
     manager: Annotated[InMemoryRoomManager, Depends(get_room_manager)],
     token_service: Annotated[RoomTokenService, Depends(get_room_token_service)],
+    collector: Annotated[MetricsCollector, Depends(get_metrics_collector)],
 ) -> RoomAccessResponse:
     room, participant = await manager.create_room(
         request.display_name, request.source_language, request.target_language
     )
+    await collector.increment_room("rooms_created_total")
+    await refresh_room_gauges(manager, collector)
     return room_access_response(manager, token_service, room, participant)
 
 
@@ -203,6 +290,7 @@ async def join_room(
     request: JoinRoomRequest,
     manager: Annotated[InMemoryRoomManager, Depends(get_room_manager)],
     token_service: Annotated[RoomTokenService, Depends(get_room_token_service)],
+    collector: Annotated[MetricsCollector, Depends(get_metrics_collector)],
 ) -> RoomAccessResponse:
     try:
         room, participant = await manager.join_room(
@@ -212,12 +300,26 @@ async def join_room(
             request.target_language,
         )
     except InvalidRoomCodeError as exc:
+        await collector.increment_room("room_join_failures_total")
         raise HTTPException(status_code=404, detail={"code": exc.code}) from exc
     except RoomFullError as exc:
+        await collector.increment_room("room_join_failures_total")
         raise HTTPException(status_code=409, detail={"code": exc.code}) from exc
     except RoomUnavailableError as exc:
+        await collector.increment_room("room_join_failures_total")
         status_code = 410 if exc.code == "ROOM_EXPIRED" else 409
         raise HTTPException(status_code=status_code, detail={"code": exc.code}) from exc
+    await manager.broadcast(
+        room.room_id,
+        event_envelope(
+            "participant.joined",
+            room.room_id,
+            participant.participant_id,
+            payload={"display_name": participant.display_name},
+        ),
+    )
+    await collector.increment_room("rooms_joined_total")
+    await refresh_room_gauges(manager, collector)
     return room_access_response(manager, token_service, room, participant)
 
 
@@ -243,6 +345,7 @@ async def close_room(
     room_id: str,
     manager: Annotated[InMemoryRoomManager, Depends(get_room_manager)],
     token_service: Annotated[RoomTokenService, Depends(get_room_token_service)],
+    collector: Annotated[MetricsCollector, Depends(get_metrics_collector)],
     authorization: Annotated[str | None, Header()] = None,
 ) -> None:
     claims = verify_bearer(authorization, token_service, room_id)
@@ -250,6 +353,8 @@ async def close_room(
     if claims["participant_id"] not in room.participants:
         raise HTTPException(status_code=401, detail={"code": "INVALID_TOKEN"})
     sockets = await manager.close_room(room_id)
+    await collector.increment_room("rooms_closed_total")
+    await refresh_room_gauges(manager, collector)
     event = {
         "type": "room.closed",
         "event_id": str(uuid4()),
@@ -273,6 +378,262 @@ def wav_duration_ms(path: str) -> float | None:
             return audio.getnframes() / audio.getframerate() * 1000
     except (OSError, EOFError, wave.Error):
         return None
+
+
+@app.websocket("/ws/rooms/{room_id}")
+async def room_websocket(
+    websocket: WebSocket,
+    room_id: str,
+    manager: Annotated[InMemoryRoomManager, Depends(get_room_manager)],
+    token_service: Annotated[RoomTokenService, Depends(get_room_token_service)],
+    pipeline: Annotated[PipelineService, Depends(get_pipeline_service)],
+    collector: Annotated[MetricsCollector, Depends(get_metrics_collector)],
+) -> None:
+    token = websocket.query_params.get("token", "")
+    try:
+        claims = token_service.verify(token)
+        if claims["room_id"] != room_id:
+            raise InvalidTokenError("token is scoped to another room")
+        participant_id = str(claims["participant_id"])
+        room = await manager.get_room(room_id)
+        if participant_id not in room.participants:
+            raise ParticipantNotFoundError(participant_id)
+    except (InvalidTokenError, ExpiredTokenError):
+        await websocket.close(code=WS_INVALID_TOKEN, reason="invalid or expired token")
+        return
+    except RoomNotFoundError:
+        await websocket.close(code=WS_ROOM_NOT_FOUND, reason="room not found")
+        return
+    except ParticipantNotFoundError:
+        await websocket.close(code=WS_PARTICIPANT_NOT_FOUND, reason="participant not found")
+        return
+
+    await websocket.accept()
+    try:
+        room = await manager.connect(room_id, participant_id, websocket)
+    except RoomUnavailableError:
+        await websocket.close(code=WS_ROOM_CLOSED, reason="room unavailable")
+        return
+    await collector.increment_room("room_websocket_connections_total")
+    await refresh_room_gauges(manager, collector)
+    await manager.broadcast(
+        room_id,
+        event_envelope("room.state", room_id, payload=manager.state(room).model_dump(mode="json")),
+    )
+    active_turn: dict[str, object] | None = None
+    try:
+        while True:
+            message = await websocket.receive()
+            if message["type"] == "websocket.disconnect":
+                break
+            if (audio := message.get("bytes")) is not None:
+                if active_turn is None:
+                    await websocket.send_json(
+                        error_event(room_id, "INVALID_EVENT", "binary audio requires audio.start")
+                    )
+                    continue
+                buffer = active_turn["audio"]
+                assert isinstance(buffer, bytearray)
+                if len(buffer) + len(audio) > settings.room_max_audio_bytes:
+                    active_turn = None
+                    await websocket.send_json(
+                        error_event(room_id, "INVALID_AUDIO_FORMAT", "audio turn is too large")
+                    )
+                    continue
+                buffer.extend(audio)
+                continue
+            raw_event = message.get("text")
+            if raw_event is None:
+                continue
+            if len(raw_event.encode()) > settings.room_max_json_bytes:
+                await websocket.send_json(
+                    error_event(room_id, "INVALID_EVENT", "event exceeds JSON size limit")
+                )
+                continue
+            try:
+                event = RoomEvent.model_validate_json(raw_event)
+                await collector.increment_room("room_events_received_total")
+                if event.room_id != room_id or event.participant_id != participant_id:
+                    raise ValueError("event identity does not match authenticated participant")
+                if event.type not in {"participant.ready", "audio.start", "audio.end", "ping"}:
+                    raise ValueError("unsupported event type")
+                if event.type == "audio.start":
+                    if active_turn is not None:
+                        raise ValueError("an audio turn is already active")
+                    payload = event.payload
+                    if (
+                        payload.get("audio_format") != "pcm_s16le"
+                        or payload.get("sample_rate_hz") != 16_000
+                        or payload.get("channels") != 1
+                        or payload.get("source_language") not in {"vi", "en"}
+                        or payload.get("target_language") not in {"vi", "en"}
+                    ):
+                        raise ValueError("unsupported audio metadata")
+                if event.type == "audio.end" and active_turn is None:
+                    raise ValueError("audio.end requires audio.start")
+                await manager.validate_event(
+                    room_id, participant_id, event.event_id, event.sequence
+                )
+                if event.type == "participant.ready":
+                    await manager.broadcast(
+                        room_id,
+                        event_envelope(
+                            "room.state",
+                            room_id,
+                            payload=manager.state(await manager.get_room(room_id)).model_dump(
+                                mode="json"
+                            ),
+                        ),
+                    )
+                elif event.type == "ping":
+                    await websocket.send_json(
+                        event_envelope("pong", room_id, participant_id, event.sequence)
+                    )
+                elif event.type == "audio.start":
+                    payload = event.payload
+                    active_turn = {
+                        "event_id": event.event_id,
+                        "sequence": event.sequence,
+                        "source_language": payload["source_language"],
+                        "target_language": payload["target_language"],
+                        "audio": bytearray(),
+                    }
+                elif event.type == "audio.end":
+                    assert active_turn is not None
+                    await process_room_turn(
+                        websocket,
+                        manager,
+                        pipeline,
+                        collector,
+                        room_id,
+                        participant_id,
+                        active_turn,
+                    )
+                    active_turn = None
+            except (ValidationError, ValueError) as exc:
+                await collector.increment_room("room_events_rejected_total")
+                await websocket.send_json(
+                    error_event(room_id, "INVALID_EVENT", str(exc), retryable=False)
+                )
+            except (DuplicateEventError, OutOfOrderEventError) as exc:
+                await collector.increment_room("room_events_rejected_total")
+                await websocket.send_json(
+                    error_event(room_id, exc.code, str(exc), retryable=False)
+                )
+    except WebSocketDisconnect:
+        pass
+    finally:
+        await manager.disconnect(room_id, participant_id, websocket)
+        await collector.increment_room("room_websocket_disconnects_total")
+        await refresh_room_gauges(manager, collector)
+        await manager.broadcast(
+            room_id,
+            event_envelope(
+                "participant.disconnected",
+                room_id,
+                participant_id,
+                payload={"reconnect_grace_seconds": settings.room_reconnect_grace_seconds},
+            ),
+        )
+
+
+async def process_room_turn(
+    websocket: WebSocket,
+    manager: InMemoryRoomManager,
+    pipeline: PipelineService,
+    collector: MetricsCollector,
+    room_id: str,
+    participant_id: str,
+    turn: dict[str, object],
+) -> None:
+    audio = bytes(turn["audio"])
+    duration_ms = len(audio) / 2 / 16_000 * 1000
+    if not audio or duration_ms > settings.room_max_turn_seconds * 1000:
+        await websocket.send_json(
+            error_event(room_id, "INVALID_AUDIO_FORMAT", "invalid audio duration")
+        )
+        return
+    vad = (
+        SileroVAD(settings.vad_threshold, settings.vad_min_silence_ms)
+        if settings.vad_mode == "silero"
+        else EnergyVAD()
+    )
+    service = StreamingPipelineService(
+        pipeline,
+        settings.audio_output_dir / "room-streams",
+        vad,
+        metrics=collector,
+    )
+    started = perf_counter()
+    try:
+        result, audio_duration_ms = await service.process_turn(
+            audio,
+            room_id,
+            participant_id,
+            turn["source_language"],  # type: ignore[arg-type]
+            turn["target_language"],  # type: ignore[arg-type]
+        )
+    except Exception as exc:
+        log_event(
+            "room.pipeline_failed",
+            room_id=room_id,
+            participant_id=participant_id,
+            event_id=turn["event_id"],
+            sequence=turn["sequence"],
+            error_type=type(exc).__name__,
+        )
+        await websocket.send_json(
+            error_event(room_id, "PIPELINE_FAILURE", "inference failed", retryable=True)
+        )
+        await collector.increment_room("room_pipeline_failures_total")
+        return
+    end_to_end_ms = (perf_counter() - started) * 1000
+    event = event_envelope(
+        "translation.result",
+        room_id,
+        participant_id,
+        int(turn["sequence"]),
+        event_id=str(turn["event_id"]),
+        payload={
+            "speaker_id": participant_id,
+            "source_language": result.source_language,
+            "target_language": result.target_language,
+            "source_text": result.transcript,
+            "translated_text": result.translation,
+            "inference_mode": "server",
+            "audio_duration_ms": audio_duration_ms,
+            "queue_latency_ms": 0.0,
+            "asr_latency_ms": result.asr_ms,
+            "mt_latency_ms": result.translation_ms,
+            "dispatch_latency_ms": 0.0,
+            "end_to_end_latency_ms": end_to_end_ms,
+            "model_versions": {
+                "asr": collector.asr_model,
+                "mt": collector.mt_model,
+            },
+        },
+    )
+    dispatch_started = perf_counter()
+    await manager.broadcast(room_id, event)
+    dispatch_ms = (perf_counter() - dispatch_started) * 1000
+    await collector.increment_room("room_translation_results_total")
+    await collector.observe_room_latency(
+        0.0, result.asr_ms, result.translation_ms, dispatch_ms, end_to_end_ms
+    )
+    log_event(
+        "room.translation_completed",
+        room_id=room_id,
+        participant_id=participant_id,
+        event_id=turn["event_id"],
+        sequence=turn["sequence"],
+        room_status=(await manager.get_room(room_id)).status,
+        source_language=result.source_language,
+        target_language=result.target_language,
+        audio_duration_ms=audio_duration_ms,
+        asr_latency_ms=result.asr_ms,
+        mt_latency_ms=result.translation_ms,
+        end_to_end_latency_ms=end_to_end_ms,
+    )
 
 
 @app.websocket("/pipeline/stream")
