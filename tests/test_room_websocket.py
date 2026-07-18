@@ -1,3 +1,4 @@
+import asyncio
 import struct
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -20,6 +21,13 @@ from services.room_tokens import RoomTokenService
 from services.rooms import InMemoryRoomManager
 from services.translation import MockTranslationService
 from services.tts import MockTTSService
+from shared.schemas import ASRResponse, AudioRequest
+
+
+class SlowMockASRService(MockASRService):
+    async def transcribe(self, request: AudioRequest) -> ASRResponse:
+        await asyncio.sleep(0.05)
+        return await super().transcribe(request)
 
 
 def make_client(tmp_path: Path) -> TestClient:
@@ -27,7 +35,7 @@ def make_client(tmp_path: Path) -> TestClient:
     tokens = RoomTokenService("test-secret-at-least-sixteen", timedelta(minutes=30))
     collector = MetricsCollector()
     pipeline = PipelineService(
-        MockASRService(), MockTranslationService(), MockTTSService(tmp_path)
+        SlowMockASRService(), MockTranslationService(), MockTTSService(tmp_path)
     )
     app.dependency_overrides[get_room_manager] = lambda: manager
     app.dependency_overrides[get_room_token_service] = lambda: tokens
@@ -118,6 +126,17 @@ def test_two_phones_receive_identical_translation_and_reconnect(tmp_path: Path) 
                         2,
                     )
                 )
+                assert phone_a.receive_json()["type"] == "audio.queued"
+                phone_a.send_json(
+                    envelope(
+                        "ping",
+                        "ping-1",
+                        room_id,
+                        first["participant_id"],
+                        3,
+                    )
+                )
+                assert phone_a.receive_json()["type"] == "pong"
                 result_a = receive_until(phone_a, "translation.result")
                 result_b = receive_until(phone_b, "translation.result")
                 assert result_a == result_b

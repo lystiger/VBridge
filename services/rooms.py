@@ -35,6 +35,10 @@ class ParticipantNotFoundError(RoomError):
     code = "PARTICIPANT_NOT_FOUND"
 
 
+class RoomPermissionError(RoomError):
+    code = "ROOM_OWNER_REQUIRED"
+
+
 class DuplicateEventError(RoomError):
     code = "DUPLICATE_EVENT"
 
@@ -50,6 +54,7 @@ class Participant:
     source_language: Language
     target_language: Language
     joined_at: datetime
+    is_owner: bool = False
     connected: bool = False
     last_seen_at: datetime | None = None
     websocket: Any | None = field(default=None, repr=False)
@@ -84,7 +89,7 @@ class InMemoryRoomManager:
         async with self._lock:
             code = self._generate_code()
             participant = self._new_participant(
-                display_name, source_language, target_language, now
+                display_name, source_language, target_language, now, is_owner=True
             )
             room = Room(
                 room_id=str(uuid4()),
@@ -203,9 +208,12 @@ class InMemoryRoomManager:
             if isinstance(result, Exception):
                 await self.disconnect(room_id, participant.participant_id, participant.websocket)
 
-    async def close_room(self, room_id: str) -> list[Any]:
+    async def close_room(self, room_id: str, participant_id: str) -> list[Any]:
         async with self._lock:
             room = self._require_room(room_id)
+            participant = self._require_participant(room, participant_id)
+            if not participant.is_owner:
+                raise RoomPermissionError(participant_id)
             room.status = RoomStatus.CLOSED
             room.updated_at = datetime.now(UTC)
             self._room_ids_by_code.pop(room.room_code, None)
@@ -247,6 +255,7 @@ class InMemoryRoomManager:
             source_language=participant.source_language,
             target_language=participant.target_language,
             connected=participant.connected,
+            is_owner=participant.is_owner,
         )
 
     async def counts(self) -> tuple[int, int]:
@@ -275,8 +284,11 @@ class InMemoryRoomManager:
         source_language: Language,
         target_language: Language,
         now: datetime,
+        is_owner: bool = False,
     ) -> Participant:
-        return Participant(str(uuid4()), display_name, source_language, target_language, now)
+        return Participant(
+            str(uuid4()), display_name, source_language, target_language, now, is_owner=is_owner
+        )
 
     def _require_room(self, room_id: str) -> Room:
         room = self._rooms.get(room_id)

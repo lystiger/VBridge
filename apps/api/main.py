@@ -43,6 +43,7 @@ from services.rooms import (
     Room,
     RoomFullError,
     RoomNotFoundError,
+    RoomPermissionError,
     RoomUnavailableError,
 )
 from services.sessions import (
@@ -352,7 +353,10 @@ async def close_room(
     room = await manager.get_room(room_id)
     if claims["participant_id"] not in room.participants:
         raise HTTPException(status_code=401, detail={"code": "INVALID_TOKEN"})
-    sockets = await manager.close_room(room_id)
+    try:
+        sockets = await manager.close_room(room_id, str(claims["participant_id"]))
+    except RoomPermissionError as exc:
+        raise HTTPException(status_code=403, detail={"code": exc.code}) from exc
     await collector.increment_room("rooms_closed_total")
     await refresh_room_gauges(manager, collector)
     event = {
@@ -421,6 +425,14 @@ async def room_websocket(
         event_envelope("room.state", room_id, payload=manager.state(room).model_dump(mode="json")),
     )
     active_turn: dict[str, object] | None = None
+    turn_queue: asyncio.Queue[dict[str, object] | None] = asyncio.Queue()
+    turn_worker = asyncio.create_task(
+        room_turn_worker(
+            turn_queue, websocket, manager, pipeline, collector, room_id, participant_id
+        ),
+        name=f"room-turns-{room_id}-{participant_id}",
+    )
+    turn_worker.add_done_callback(report_background_failure)
     try:
         while True:
             message = await websocket.receive()
@@ -500,15 +512,27 @@ async def room_websocket(
                     }
                 elif event.type == "audio.end":
                     assert active_turn is not None
-                    await process_room_turn(
-                        websocket,
-                        manager,
-                        pipeline,
-                        collector,
-                        room_id,
-                        participant_id,
-                        active_turn,
-                    )
+                    if turn_queue.qsize() >= settings.room_max_queued_turns:
+                        await websocket.send_json(
+                            error_event(
+                                room_id,
+                                "RATE_LIMITED",
+                                "too many audio turns are queued",
+                                retryable=True,
+                            )
+                        )
+                    else:
+                        active_turn["queued_at"] = perf_counter()
+                        turn_queue.put_nowait(active_turn)
+                        await websocket.send_json(
+                            event_envelope(
+                                "audio.queued",
+                                room_id,
+                                participant_id,
+                                int(active_turn["sequence"]),
+                                event_id=str(active_turn["event_id"]),
+                            )
+                        )
                     active_turn = None
             except (ValidationError, ValueError) as exc:
                 await collector.increment_room("room_events_rejected_total")
@@ -523,6 +547,7 @@ async def room_websocket(
     except WebSocketDisconnect:
         pass
     finally:
+        turn_queue.put_nowait(None)
         await manager.disconnect(room_id, participant_id, websocket)
         await collector.increment_room("room_websocket_disconnects_total")
         await refresh_room_gauges(manager, collector)
@@ -537,6 +562,37 @@ async def room_websocket(
         )
 
 
+
+def report_background_failure(task: asyncio.Task[None]) -> None:
+    try:
+        task.result()
+    except asyncio.CancelledError:
+        pass
+    except Exception as exc:
+        log_event("room.turn_worker_failed", error_type=type(exc).__name__)
+
+
+async def room_turn_worker(
+    queue: asyncio.Queue[dict[str, object] | None],
+    websocket: WebSocket,
+    manager: InMemoryRoomManager,
+    pipeline: PipelineService,
+    collector: MetricsCollector,
+    room_id: str,
+    participant_id: str,
+) -> None:
+    while True:
+        turn = await queue.get()
+        try:
+            if turn is None:
+                return
+            await process_room_turn(
+                websocket, manager, pipeline, collector, room_id, participant_id, turn
+            )
+        finally:
+            queue.task_done()
+
+
 async def process_room_turn(
     websocket: WebSocket,
     manager: InMemoryRoomManager,
@@ -547,11 +603,16 @@ async def process_room_turn(
     turn: dict[str, object],
 ) -> None:
     audio = bytes(turn["audio"])
+    started = float(turn.get("queued_at", perf_counter()))
+    queue_ms = (perf_counter() - started) * 1000
     duration_ms = len(audio) / 2 / 16_000 * 1000
     if not audio or duration_ms > settings.room_max_turn_seconds * 1000:
-        await websocket.send_json(
-            error_event(room_id, "INVALID_AUDIO_FORMAT", "invalid audio duration")
-        )
+        try:
+            await websocket.send_json(
+                error_event(room_id, "INVALID_AUDIO_FORMAT", "invalid audio duration")
+            )
+        except RuntimeError:
+            pass
         return
     vad = (
         SileroVAD(settings.vad_threshold, settings.vad_min_silence_ms)
@@ -564,7 +625,6 @@ async def process_room_turn(
         vad,
         metrics=collector,
     )
-    started = perf_counter()
     try:
         result, audio_duration_ms = await service.process_turn(
             audio,
@@ -582,9 +642,12 @@ async def process_room_turn(
             sequence=turn["sequence"],
             error_type=type(exc).__name__,
         )
-        await websocket.send_json(
-            error_event(room_id, "PIPELINE_FAILURE", "inference failed", retryable=True)
-        )
+        try:
+            await websocket.send_json(
+                error_event(room_id, "PIPELINE_FAILURE", "inference failed", retryable=True)
+            )
+        except RuntimeError:
+            pass
         await collector.increment_room("room_pipeline_failures_total")
         return
     end_to_end_ms = (perf_counter() - started) * 1000
@@ -602,7 +665,7 @@ async def process_room_turn(
             "translated_text": result.translation,
             "inference_mode": "server",
             "audio_duration_ms": audio_duration_ms,
-            "queue_latency_ms": 0.0,
+            "queue_latency_ms": queue_ms,
             "asr_latency_ms": result.asr_ms,
             "mt_latency_ms": result.translation_ms,
             "dispatch_latency_ms": 0.0,
@@ -618,7 +681,7 @@ async def process_room_turn(
     dispatch_ms = (perf_counter() - dispatch_started) * 1000
     await collector.increment_room("room_translation_results_total")
     await collector.observe_room_latency(
-        0.0, result.asr_ms, result.translation_ms, dispatch_ms, end_to_end_ms
+        queue_ms, result.asr_ms, result.translation_ms, dispatch_ms, end_to_end_ms
     )
     log_event(
         "room.translation_completed",

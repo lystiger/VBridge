@@ -40,6 +40,10 @@ def test_create_join_get_close_room_api() -> None:
         unauthorized = client.get(
             f"/rooms/{room_id}", headers={"Authorization": "Bearer invalid"}
         )
+        non_owner_close = client.delete(
+            f"/rooms/{room_id}",
+            headers={"Authorization": f"Bearer {joined.json()['access_token']}"},
+        )
         closed = client.delete(
             f"/rooms/{room_id}", headers={"Authorization": f"Bearer {token}"}
         )
@@ -54,6 +58,8 @@ def test_create_join_get_close_room_api() -> None:
     assert state.status_code == 200
     assert state.json()["participant_count"] == 2
     assert unauthorized.status_code == 401
+    assert non_owner_close.status_code == 403
+    assert non_owner_close.json()["detail"]["code"] == "ROOM_OWNER_REQUIRED"
     assert closed.status_code == 204
 
 

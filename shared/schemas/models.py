@@ -21,6 +21,7 @@ class RoomParticipant(BaseModel):
     source_language: Language
     target_language: Language
     connected: bool = False
+    is_owner: bool = False
 
 
 class CreateRoomRequest(BaseModel):

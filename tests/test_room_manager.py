@@ -11,6 +11,7 @@ from services.rooms import (
     InvalidRoomCodeError,
     OutOfOrderEventError,
     RoomFullError,
+    RoomPermissionError,
 )
 from shared.schemas import RoomStatus
 
@@ -34,6 +35,7 @@ async def test_room_lifecycle_capacity_connections_and_close() -> None:
     assert room.status == RoomStatus.WAITING
     assert re.fullmatch(f"[{ROOM_CODE_ALPHABET}]{{6}}", room.room_code)
     assert creator.participant_id in room.participants
+    assert creator.is_owner
 
     joined_room, joiner = await manager.join_room(room.room_code.lower(), "Phone B", "en", "vi")
     assert joined_room.status == RoomStatus.READY
@@ -50,11 +52,13 @@ async def test_room_lifecycle_capacity_connections_and_close() -> None:
     assert old_socket.closed
     await manager.connect(room.room_id, joiner.participant_id, other_socket)
     assert room.status == RoomStatus.ACTIVE
+    with pytest.raises(RoomPermissionError):
+        await manager.close_room(room.room_id, joiner.participant_id)
     await manager.disconnect(room.room_id, creator.participant_id, replacement)
     assert not creator.connected
     assert room.status == RoomStatus.WAITING
 
-    sockets = await manager.close_room(room.room_id)
+    sockets = await manager.close_room(room.room_id, creator.participant_id)
     assert room.status == RoomStatus.CLOSED
     assert sockets == [other_socket]
     with pytest.raises(InvalidRoomCodeError):
