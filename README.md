@@ -69,3 +69,53 @@ python scripts/eval/run.py --asr-mode real --mt-mode real
 ```
 
 The selected defaults are `Systran/faster-whisper-base` and `facebook/nllb-200-distilled-600M`. CPU evaluation numbers are wiring evidence only and are not representative of the target RTX 4060.
+
+## Android conversation protocol
+
+The conversation API adds `POST /sessions`, `POST /sessions/{session_id}/participants`, and
+`WS /sessions/{session_id}/ws?participant_id=...` without changing the existing REST API.
+
+Create a conversation, then join each phone with opposite language directions:
+
+```http
+POST /sessions
+```
+
+```json
+{"session_id":"4a8a..."}
+```
+
+```http
+POST /sessions/4a8a.../participants
+Content-Type: application/json
+
+{"source_language":"vi","target_language":"en"}
+```
+
+Keep the returned `participant_id` on the phone. To reconnect, repeat the join request with
+that `participant_id`, then open:
+
+```text
+ws://192.168.1.10:8000/sessions/4a8a.../ws?participant_id=9b2c...
+```
+
+For each complete recorded turn, send one text frame followed immediately by one binary frame.
+The binary frame contains the same complete encoded audio file that `/pipeline/upload` accepts.
+
+```json
+{"type":"turn.start","sequence":1,"source_language":"vi","target_language":"en"}
+```
+
+The server acknowledges the turn and broadcasts ordered results to both connected phones:
+
+```json
+{"type":"turn.accepted","session_id":"4a8a...","participant_id":"9b2c...","sequence":1,"status":"queued"}
+{"type":"transcript.final","session_id":"4a8a...","participant_id":"9b2c...","sequence":1,"source_language":"vi","target_language":"en","text":"Xin chao"}
+{"type":"translation.final","session_id":"4a8a...","participant_id":"9b2c...","sequence":1,"source_language":"vi","target_language":"en","text":"Hello","audio_url":"/audio/4a8a....wav","asr_ms":12.4,"mt_ms":4.2}
+{"type":"turn.completed","session_id":"4a8a...","participant_id":"9b2c...","sequence":1,"queue_ms":0.3,"dispatch_ms":0.4,"end_to_end_ms":20.1}
+```
+
+Sequence numbers start at 1 per participant. Out-of-order turns wait for missing earlier turns.
+Retries with a completed sequence replay cached final events with `"duplicate": true`; retries do
+not run inference twice. Session and retry state are process-local, expire on server restart, and
+require a single API worker until shared storage is introduced.
