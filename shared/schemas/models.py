@@ -65,6 +65,31 @@ class PipelineResponse(BaseModel):
     total_pipeline_ms: float = Field(ge=0)
 
 
+class SessionCreateResponse(BaseModel):
+    session_id: str
+
+
+class ParticipantJoinRequest(BaseModel):
+    participant_id: str | None = None
+    source_language: Language
+    target_language: Language
+
+
+class ParticipantResponse(BaseModel):
+    session_id: str
+    participant_id: str
+    source_language: Language
+    target_language: Language
+    connected: bool = False
+
+
+class TurnStartRequest(BaseModel):
+    type: Literal["turn.start"]
+    sequence: int = Field(ge=1)
+    source_language: Language
+    target_language: Language
+
+
 class HealthResponse(BaseModel):
     status: Literal["ok"] = "ok"
     service: str
@@ -77,6 +102,10 @@ class MetricsResponse(BaseModel):
     translation_ms: float = Field(ge=0)
     tts_ms: float = Field(ge=0)
     total_pipeline_ms: float = Field(ge=0)
+    queue_ms: float = Field(ge=0, default=0)
+    mt_ms: float = Field(ge=0, default=0)
+    dispatch_ms: float = Field(ge=0, default=0)
+    end_to_end_ms: float = Field(ge=0, default=0)
     backend: str = "cpu"
     asr_model: str = "mock"
     mt_model: str = "mock"
