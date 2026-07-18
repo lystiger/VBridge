@@ -169,3 +169,5 @@ class MetricsResponse(BaseModel):
     mt_mode: str = "mock"
     timing_note: str = "Tiny-model / CPU timings are not representative of the target card."
     recent_utterances: list[dict[str, float | str]] = []
+    room_metrics: dict[str, int | float] = {}
+    room_latency_observations: list[dict[str, float]] = []
