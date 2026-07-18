@@ -8,7 +8,10 @@ __pycache__/
 apps/web/node_modules/
 apps/web/dist/
 apps/web/*.tsbuildinfo
-docs/
+docs/*
+!docs/images/
+docs/images/*
+!docs/images/vbridge-*.png
 /.venv
 models/
 .cache/

@@ -3,6 +3,7 @@ import type { Route } from '../App'
 const LINKS: { route: Route; label: string }[] = [
   { route: 'dashboard', label: 'Dashboard' },
   { route: 'research', label: 'Research' },
+  { route: 'room', label: 'Room' },
 ]
 
 export default function NavBar({ route }: { route: Route }) {

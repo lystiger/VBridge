@@ -3,11 +3,15 @@ import Backdrop from './components/Backdrop'
 import NavBar from './components/NavBar'
 import Dashboard from './pages/Dashboard'
 import Research from './pages/Research'
+import Room from './pages/Room'
 
-export type Route = 'dashboard' | 'research'
+export type Route = 'dashboard' | 'research' | 'room'
 
 function parseHash(): Route {
-  return window.location.hash.replace(/^#\/?/, '') === 'research' ? 'research' : 'dashboard'
+  const hash = window.location.hash.replace(/^#\/?/, '')
+  if (hash === 'research') return 'research'
+  if (hash === 'room') return 'room'
+  return 'dashboard'
 }
 
 export default function App() {
@@ -35,7 +39,7 @@ export default function App() {
 
       <Backdrop />
       <NavBar route={route} />
-      {route === 'research' ? <Research /> : <Dashboard />}
+      {route === 'research' ? <Research /> : route === 'room' ? <Room /> : <Dashboard />}
     </div>
   )
 }

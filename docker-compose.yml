@@ -4,22 +4,27 @@ services:
       context: .
       dockerfile: docker/api.Dockerfile
       args:
-        # Lightweight default; use VBRIDGE_EXTRAS=[vad,asr,mt] for an inference image.
-        VBRIDGE_EXTRAS: ${VBRIDGE_EXTRAS:-}
+        # Real inference by default. For a fast mock stack:
+        #   VBRIDGE_EXTRAS= VBRIDGE_ASR_MODE=mock VBRIDGE_MT_MODE=mock VBRIDGE_VAD_MODE=energy \
+        #     docker compose up --build
+        VBRIDGE_EXTRAS: ${VBRIDGE_EXTRAS-[audio,asr,mt,vad]}
     environment:
       VBRIDGE_AUDIO_OUTPUT_DIR: /data/audio
       VBRIDGE_CORS_ORIGINS: http://localhost:5173
       VBRIDGE_INFERENCE_BACKEND: ${VBRIDGE_INFERENCE_BACKEND:-cpu}
-      VBRIDGE_ASR_MODE: ${VBRIDGE_ASR_MODE:-mock}
-      VBRIDGE_MT_MODE: ${VBRIDGE_MT_MODE:-mock}
+      VBRIDGE_ASR_MODE: ${VBRIDGE_ASR_MODE:-real}
+      VBRIDGE_MT_MODE: ${VBRIDGE_MT_MODE:-real}
       VBRIDGE_TTS_MODE: mock
       # Room state is process-local; this must remain one until shared storage is added.
       VBRIDGE_API_WORKERS: 1
-      # Energy fallback keeps the base image small; inference images should select silero.
-      VBRIDGE_VAD_MODE: ${VBRIDGE_VAD_MODE:-energy}
+      VBRIDGE_VAD_MODE: ${VBRIDGE_VAD_MODE:-silero}
+      HF_HOME: /data/hf
     ports: ["8000:8000"]
-    volumes: ["audio-data:/data/audio"]
+    volumes:
+      - audio-data:/data/audio
+      - hf-cache:/data/hf
     healthcheck:
+      # /health does not load models, so it passes quickly even for the real image.
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
       interval: 5s
       timeout: 3s
@@ -28,8 +33,11 @@ services:
     build:
       context: .
       dockerfile: docker/web.Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:8000}
     ports: ["5173:80"]
     depends_on:
       api: { condition: service_healthy }
 volumes:
   audio-data:
+  hf-cache:
