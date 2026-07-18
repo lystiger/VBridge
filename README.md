@@ -127,6 +127,93 @@ In **device mode**, the phone sends an already-computed `translation.result`; th
 | Packaging | Docker Compose; optional CUDA override |
 | Quality | pytest, Ruff, TypeScript, ESLint |
 
+### Distilled and edge MT models
+
+#### What
+
+VBridge currently has two distinct MT model tracks:
+
+| Track | Artifact | Role today | Provenance we can verify |
+|---|---|---|---|
+| **Server baseline** | `facebook/nllb-200-distilled-600M` | Active real-mode translation service | A multilingual checkpoint distilled and published by Meta; it was **not** distilled by Team SilentVoix |
+| **Edge candidate** | `distilled/mt-vi-en/onnx_int8` and `distilled/mt-en-vi/onnx_int8` | Local direction-specific ONNX packages, not yet wired into the VBridge pipeline | MarianMT architecture, six encoder and six decoder layers, INT8 ONNX quantization, separate Vietnamese → English and English → Vietnamese tokenizers |
+
+The local folder name `distilled/` does not by itself establish that the team performed knowledge distillation. The checked-in metadata proves ONNX export and INT8 quantization from FP32 artifacts, but the repository does not yet contain the training code, teacher outputs, dataset manifest, base checkpoint identifier, hyperparameters, or training logs needed to reproduce a team fine-tune or distillation run.
+
+> [!IMPORTANT]
+> **Quantization and distillation are different.** Quantization stores computations at lower precision to reduce memory and often improve CPU/edge latency. Knowledge distillation trains a smaller student to reproduce a teacher's behavior. Until the missing training provenance is added, describe these artifacts as **team-prepared, direction-specific MarianMT ONNX INT8 edge models**, not “self-trained distilled models.”
+
+#### Why
+
+NLLB is the quality-oriented multilingual server baseline, while the smaller direction-specific Marian models are candidates for the edge-device bonus. The decision should be evidence-based: an edge model is useful only if its reductions in size, RAM, and latency outweigh any loss in meaning, terminology, names, numbers, and robustness.
+
+#### How the team-trained claim becomes reproducible
+
+If these Marian checkpoints were fine-tuned or distilled by the team, add the following before making that claim in the demo:
+
+- [ ] Base model repository and immutable revision/hash
+- [ ] Licensed training-data manifest, source, cleaning steps, and sample counts by direction
+- [ ] Fixed train, validation, and untouched test splits with leakage checks
+- [ ] Fine-tuning and/or teacher–student distillation script
+- [ ] Teacher model, temperature, loss composition, optimizer, learning rate, epochs, seed, and hardware
+- [ ] FP32 checkpoint metrics before ONNX export
+- [ ] Export and INT8 quantization command with tool versions
+- [ ] Model card covering intended use, limitations, licenses, and known failure cases
+- [ ] Artifact hashes or a versioned model release so another person can reproduce the benchmark
+
+#### How to put it into VBridge
+
+The pipeline already depends on the abstract `TranslationService`, so the edge model belongs behind a new ONNX implementation rather than inside the room or API code.
+
+```mermaid
+flowchart LR
+    P[PipelineService] --> I[TranslationService interface]
+    I -->|server baseline| N[NLLBTranslationService]
+    I -->|edge candidate| O[MarianONNXTranslationService]
+    O --> D{source language}
+    D -->|vi| VE[mt-vi-en / ONNX INT8]
+    D -->|en| EV[mt-en-vi / ONNX INT8]
+    VE --> G[Shared glossary + TranslationResponse]
+    EV --> G
+    N --> G
+```
+
+The ONNX adapter should:
+
+1. Load both local model/tokenizer directories once at startup with ONNX Runtime.
+2. Select `mt-vi-en` or `mt-en-vi` from `request.source_language`.
+3. Tokenize, generate with a fixed and documented beam configuration, and decode.
+4. Apply the same glossary post-processing used by NLLB.
+5. Return the existing `TranslationResponse`, including measured `processing_ms`.
+6. Expose the selected model name and backend through `/metrics`.
+7. Add an explicit mode such as `VBRIDGE_MT_MODE=onnx`; do not silently replace the NLLB baseline.
+
+This is the intended integration contract, not a claim that the ONNX adapter is already implemented.
+
+#### How to evaluate it against other MT models
+
+Compare models on the **same frozen test set**, on the **same hardware**, with identical text normalization and decoding rules. Report Vietnamese → English and English → Vietnamese separately; a single average can hide a weak direction.
+
+| Dimension | Required measurement | Why it matters |
+|---|---|---|
+| General translation quality | sacreBLEU signature and chrF++ | Reproducible lexical and character-level comparison |
+| Meaning preservation | COMET or human adequacy score | Captures semantic quality that BLEU can miss |
+| Business fidelity | Exact-match rates for names, companies, numbers, dates, units, and glossary terms | Directly targets the challenge's meeting scenario |
+| Speed | Cold start plus warm p50/p95 latency, sentences/second | Separates initialization cost from conversation responsiveness |
+| Edge fit | On-disk size, peak RAM, and CPU utilization | Tests whether the model is genuinely deployable on a small device |
+| Robust pipeline quality | ASR → MT score on clean and noisy recorded speech | Measures error propagation in the product, not only clean-text MT |
+| Reliability | Empty output, hallucination, wrong-language, and truncation rates | Makes failure modes visible |
+
+Use at least these comparison rows:
+
+1. Current NLLB-200 distilled 600M server baseline.
+2. Team-prepared MarianMT FP32 parent checkpoint, if it can be recovered and versioned.
+3. Team-prepared MarianMT ONNX INT8 artifact.
+4. The original public Marian baseline at a pinned revision.
+5. Any future SEA-LION-assisted approach as a separately labelled experiment, not as an existing dependency.
+
+Evaluate MT twice: first with gold reference text to isolate translation quality, then with real ASR transcripts to measure end-to-end meeting performance. Publish per-sentence outputs and paired differences—not only aggregate scores—so judges can inspect where the smaller model wins or fails.
+
 ### Quick start
 
 #### Full inference stack
@@ -288,11 +375,11 @@ Legend: ✅ implemented · 🟡 implemented with live-demo validation still requ
 
 | Criterion | Weight | VBridge response | Evidence to present |
 |---|---:|---|---|
-| **Translation accuracy** | **30%** | Bidirectional faster-whisper + NLLB pipeline with repeatable evaluation inputs and outputs. | Run prepared Vietnamese and English business turns; show `vbridge_mt_evaluation.csv` and the evaluation command. |
-| **Latency and responsiveness** | **20%** | Streaming and complete-turn paths expose ASR, MT, TTS, queue, and end-to-end timing. | Show live results and `/metrics`; report the judging-machine measurements rather than a generic claim. |
-| **User experience and meeting flow** | **20%** | Two-device room, six-character pairing, language direction, push-to-talk, transcript, translation, and audio output. | Let a judge join as the second participant and conduct an alternating conversation without operator intervention. |
-| **Robustness in realistic conditions** | **15%** | VAD, bounded turn queues, reconnect handling, speaker identity, ordered events, and noise robustness experiments. | Demo alternating speakers and background noise; show the ASR noise chart and recovery behavior. |
-| **Technical design and deployability** | **15%** | Modular services, canonical events, authenticated rooms, REST/WebSocket APIs, health checks, metrics, containers, and two inference modes. | Use the architecture diagram, OpenAPI docs, and a clean Docker startup. |
+| **Translation accuracy** | **30%** | Bidirectional faster-whisper + NLLB pipeline with human-recorded Vietnamese and English business fixtures. | Run `scripts/eval/run.py` in real mode on `vi_business_01.wav` and `en_business_01.wav`; present its WER, BLEU, RTF, model name, backend, and total time. Treat `vbridge_mt_evaluation.csv` as supplementary MT evidence, not a stand-alone score. |
+| **Latency and responsiveness** | **20%** | Streaming and complete-turn paths record ASR, MT, TTS, queue, dispatch, and end-to-end timing. | Complete several live turns, then show the result timings and `/metrics`. Report warm-turn measurements from the judging machine and disclose cold model startup separately. |
+| **User experience and meeting flow** | **20%** | The two-device room provides six-character pairing, language direction, push-to-talk, speaker-labelled transcripts, and translated text. Synthesized audio is available in the separate Research console. | Let a judge join as the second participant and conduct an alternating conversation without operator intervention; use Research only if audio playback must also be shown. |
+| **Robustness in realistic conditions** | **15%** | VAD, bounded turn queues, speaker identity, ordered events, duplicate rejection, and noise-test assets address realistic conversation behavior. | Demo alternating speakers and one controlled-noise turn. Show the ASR noise chart only as preliminary evidence, then report the live outcome; use the automated room tests to demonstrate ordering, duplicate rejection, queueing, and token-based socket replacement. |
+| **Technical design and deployability** | **15%** | Modular services, canonical events, authenticated rooms, REST/WebSocket APIs, health checks, metrics, containers, and two inference modes. | Start the stack with Docker, open `/health`, `/metrics`, and `/docs`, then relate the running services to the architecture diagram. State that room state is process-local and currently requires one API worker. |
 
 ### Bonus considerations
 
@@ -312,7 +399,7 @@ Legend: ✅ implemented · 🟡 implemented with live-demo validation still requ
 - [ ] Include names, numbers, dates, and business terminology in the accuracy test.
 - [ ] Run alternating speakers without an operator touching the host.
 - [ ] Add controlled background noise and confirm VAD and turn completion remain usable.
-- [ ] Disconnect and reconnect one phone without losing room identity.
+- [ ] Verify token-based WebSocket replacement with the room API test or a controlled client; do not claim automatic browser reconnection, which is not implemented.
 - [ ] Demonstrate that both phones receive the same ordered translation result.
 - [ ] Keep the deterministic mock stack ready only as a transport/UI fallback, clearly labelled as mock.
 - [ ] State the edge-device limitation accurately; do not present the browser stand-in as native offline inference.
