@@ -22,6 +22,19 @@ def test_sprint02_configuration_defaults_to_cpu_mocks() -> None:
     assert settings.asr_mode == settings.mt_mode == settings.tts_mode == "mock"
 
 
+def test_room_deployment_rejects_unsafe_production_settings() -> None:
+    with pytest.raises(ValueError, match="non-default"):
+        Settings(_env_file=None, deployment_environment="production")
+    with pytest.raises(ValueError, match="must be 1"):
+        Settings(_env_file=None, api_workers=2)
+    production = Settings(
+        _env_file=None,
+        deployment_environment="production",
+        room_token_secret="a-unique-production-secret",
+    )
+    assert production.deployment_environment == "production"
+
+
 def test_real_tts_fails_clearly(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("VBRIDGE_TTS_MODE", "real")
     get_settings.cache_clear()
