@@ -5,7 +5,7 @@ from services.asr import ASRService
 from services.translation import TranslationService
 from services.tts import TTSService
 from shared.logging import log_event
-from shared.schemas import AudioRequest, PipelineResponse, TranslationRequest, TTSRequest
+from shared.schemas import AudioRequest, Language, PipelineResponse, TranslationRequest, TTSRequest
 
 
 class PipelineService:
@@ -15,7 +15,10 @@ class PipelineService:
         self.tts = tts
 
     async def process(
-        self, request: AudioRequest, request_id: str | None = None
+        self,
+        request: AudioRequest,
+        request_id: str | None = None,
+        target_language: Language | None = None,
     ) -> PipelineResponse:
         request_id = request_id or str(uuid4())
         started = perf_counter()
@@ -29,6 +32,7 @@ class PipelineService:
                 session_id=request.session_id,
                 text=transcript.text,
                 source_language=transcript.source_language,
+                target_language=target_language,
             )
         )
         log_event("translation_completed", duration_ms=translation.processing_ms, **context)

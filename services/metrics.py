@@ -18,6 +18,10 @@ class MetricsCollector:
             "translation_ms": 0.0,
             "tts_ms": 0.0,
             "total_pipeline_ms": 0.0,
+            "queue_ms": 0.0,
+            "mt_ms": 0.0,
+            "dispatch_ms": 0.0,
+            "end_to_end_ms": 0.0,
         }
         self._lock = asyncio.Lock()
         self.backend = backend
@@ -26,13 +30,29 @@ class MetricsCollector:
         self.asr_mode = asr_mode
         self.mt_mode = mt_mode
         self._recent: list[dict[str, float | str]] = []
+        self._room_metrics: dict[str, int | float] = {
+            "rooms_created_total": 0,
+            "rooms_joined_total": 0,
+            "rooms_closed_total": 0,
+            "rooms_expired_total": 0,
+            "room_join_failures_total": 0,
+            "room_websocket_connections_total": 0,
+            "room_websocket_disconnects_total": 0,
+            "room_events_received_total": 0,
+            "room_events_rejected_total": 0,
+            "room_translation_results_total": 0,
+            "room_pipeline_failures_total": 0,
+            "active_rooms": 0,
+            "connected_room_participants": 0,
+        }
+        self._room_latencies: list[dict[str, float]] = []
 
     async def record(
         self, result: PipelineResponse, audio_duration_ms: float | None = None
     ) -> None:
         async with self._lock:
             self._count += 1
-            for field in self._totals:
+            for field in ("asr_ms", "translation_ms", "tts_ms", "total_pipeline_ms"):
                 self._totals[field] += getattr(result, field)
             utterance: dict[str, float | str] = {
                 "session_id": result.session_id,
@@ -52,6 +72,70 @@ class MetricsCollector:
             self._recent.append(utterance)
             self._recent = self._recent[-100:]
 
+    async def record_session_turn(
+        self,
+        result: PipelineResponse,
+        queue_ms: float,
+        dispatch_ms: float,
+        end_to_end_ms: float,
+    ) -> None:
+        """Record a conversation turn and the transport/queue stages around inference."""
+        async with self._lock:
+            self._count += 1
+            values = {
+                "asr_ms": result.asr_ms,
+                "translation_ms": result.translation_ms,
+                "tts_ms": result.tts_ms,
+                "total_pipeline_ms": result.total_pipeline_ms,
+                "queue_ms": queue_ms,
+                "mt_ms": result.translation_ms,
+                "dispatch_ms": dispatch_ms,
+                "end_to_end_ms": end_to_end_ms,
+            }
+            for field, value in values.items():
+                self._totals[field] += value
+            self._recent.append(
+                {
+                    "session_id": result.session_id,
+                    **values,
+                    "backend": self.backend,
+                    "asr_model": self.asr_model,
+                    "mt_model": self.mt_model,
+                    "asr_mode": self.asr_mode,
+                    "mt_mode": self.mt_mode,
+                }
+            )
+            self._recent = self._recent[-100:]
+
+    async def increment_room(self, metric: str, amount: int = 1) -> None:
+        async with self._lock:
+            self._room_metrics[metric] = self._room_metrics.get(metric, 0) + amount
+
+    async def set_room_gauges(self, active_rooms: int, connected_participants: int) -> None:
+        async with self._lock:
+            self._room_metrics["active_rooms"] = active_rooms
+            self._room_metrics["connected_room_participants"] = connected_participants
+
+    async def observe_room_latency(
+        self,
+        queue_ms: float,
+        asr_ms: float,
+        mt_ms: float,
+        dispatch_ms: float,
+        end_to_end_ms: float,
+    ) -> None:
+        async with self._lock:
+            self._room_latencies.append(
+                {
+                    "queue_ms": queue_ms,
+                    "asr_ms": asr_ms,
+                    "mt_ms": mt_ms,
+                    "dispatch_ms": dispatch_ms,
+                    "end_to_end_ms": end_to_end_ms,
+                }
+            )
+            self._room_latencies = self._room_latencies[-100:]
+
     def snapshot(self) -> MetricsResponse:
         divisor = self._count or 1
         return MetricsResponse(
@@ -63,5 +147,7 @@ class MetricsCollector:
             asr_mode=self.asr_mode,
             mt_mode=self.mt_mode,
             recent_utterances=self._recent.copy(),
+            room_metrics=self._room_metrics.copy(),
+            room_latency_observations=self._room_latencies.copy(),
             **{field: value / divisor for field, value in self._totals.items()},
         )
