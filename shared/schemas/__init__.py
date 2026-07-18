@@ -2,12 +2,17 @@ from shared.schemas.models import (
     ASRResponse,
     AudioRequest,
     HealthResponse,
+    Language,
     MetricsResponse,
+    ParticipantJoinRequest,
+    ParticipantResponse,
     PipelineResponse,
+    SessionCreateResponse,
     TranslationRequest,
     TranslationResponse,
     TTSRequest,
     TTSResponse,
+    TurnStartRequest,
 )
 
 __all__ = [
@@ -16,8 +21,13 @@ __all__ = [
     "HealthResponse",
     "MetricsResponse",
     "PipelineResponse",
+    "ParticipantJoinRequest",
+    "ParticipantResponse",
+    "SessionCreateResponse",
     "TranslationRequest",
     "TranslationResponse",
     "TTSRequest",
     "TTSResponse",
+    "TurnStartRequest",
+    "Language",
 ]
