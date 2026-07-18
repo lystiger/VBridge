@@ -13,3 +13,5 @@ docs/
 models/
 .cache/
 dataset/audio/
+vbridge_model/
+*.onnx
