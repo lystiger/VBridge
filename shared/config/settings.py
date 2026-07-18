@@ -2,7 +2,10 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+DEFAULT_ROOM_TOKEN_SECRET = "vbridge-local-room-secret-change-me"
 
 
 class Settings(BaseSettings):
@@ -25,6 +28,27 @@ class Settings(BaseSettings):
     vad_threshold: float = 0.3
     vad_min_silence_ms: int = 500
     partial_interval_chunks: int = 12
+    deployment_environment: Literal["development", "production"] = "development"
+    api_workers: int = Field(default=1, ge=1)
+    room_token_secret: str = DEFAULT_ROOM_TOKEN_SECRET
+    room_ttl_minutes: int = 30
+    room_cleanup_interval_seconds: int = 60
+    room_reconnect_grace_seconds: int = 60
+    room_max_audio_bytes: int = 10 * 1024 * 1024
+    room_max_turn_seconds: int = 30
+    room_max_json_bytes: int = 16 * 1024
+    room_max_queued_turns: int = 4
+
+    @model_validator(mode="after")
+    def validate_room_deployment(self) -> "Settings":
+        if self.api_workers != 1:
+            raise ValueError("room state is process-local; VBRIDGE_API_WORKERS must be 1")
+        if (
+            self.deployment_environment == "production"
+            and self.room_token_secret == DEFAULT_ROOM_TOKEN_SECRET
+        ):
+            raise ValueError("production requires a non-default VBRIDGE_ROOM_TOKEN_SECRET")
+        return self
 
     @property
     def cors_origin_list(self) -> list[str]:

@@ -13,6 +13,8 @@ services:
       VBRIDGE_ASR_MODE: ${VBRIDGE_ASR_MODE:-mock}
       VBRIDGE_MT_MODE: ${VBRIDGE_MT_MODE:-mock}
       VBRIDGE_TTS_MODE: mock
+      # Room state is process-local; this must remain one until shared storage is added.
+      VBRIDGE_API_WORKERS: 1
       # Energy fallback keeps the base image small; inference images should select silero.
       VBRIDGE_VAD_MODE: ${VBRIDGE_VAD_MODE:-energy}
     ports: ["8000:8000"]

@@ -119,3 +119,89 @@ Sequence numbers start at 1 per participant. Out-of-order turns wait for missing
 Retries with a completed sequence replay cached final events with `"duplicate": true`; retries do
 not run inference twice. Session and retry state are process-local, expire on server restart, and
 require a single API worker until shared storage is introduced.
+
+## Two-phone room protocol
+
+Rooms are process-local and support exactly two participants. The configuration rejects
+`VBRIDGE_API_WORKERS` values other than `1`; room state is lost when the server restarts. Existing
+inference and `/pipeline/stream` endpoints are unchanged.
+
+Phone A creates a room:
+
+```http
+POST /rooms
+Content-Type: application/json
+
+{"display_name":"Phone A","source_language":"vi","target_language":"en"}
+```
+
+The `201` response contains `room_id`, a six-character `room_code`, the creator participant,
+`access_token`, status, and expiration. Phone B joins with the code:
+
+```http
+POST /rooms/join
+Content-Type: application/json
+
+{"room_code":"7KQ4MP","display_name":"Phone B","source_language":"en","target_language":"vi"}
+```
+
+Each phone connects with its own returned token:
+
+```text
+ws://192.168.1.10:8000/ws/rooms/{room_id}?token={access_token}
+```
+
+All JSON messages use the canonical envelope. Start a 16 kHz, mono, signed 16-bit PCM turn:
+
+```json
+{
+  "type":"audio.start",
+  "event_id":"4fe8c25f-b159-4ec9-ae9a-95c4db61e58d",
+  "room_id":"8b1b6c55-7e5b-4cd1-b30a-2a91eac905f4",
+  "participant_id":"a88ac568-eafb-452f-8c43-4a988420797b",
+  "sequence":1,
+  "timestamp":"2026-07-18T16:45:01Z",
+  "payload":{"audio_format":"pcm_s16le","sample_rate_hz":16000,"channels":1,"source_language":"vi","target_language":"en"}
+}
+```
+
+Send one or more binary PCM frames, followed by `audio.end` with a new event ID and a higher
+sequence. The server runs the accumulated turn once through the existing streaming pipeline and
+broadcasts one identical authoritative result to both phones:
+
+```json
+{
+  "type":"translation.result",
+  "event_id":"4fe8c25f-b159-4ec9-ae9a-95c4db61e58d",
+  "room_id":"8b1b6c55-7e5b-4cd1-b30a-2a91eac905f4",
+  "participant_id":"a88ac568-eafb-452f-8c43-4a988420797b",
+  "sequence":1,
+  "timestamp":"2026-07-18T16:45:04Z",
+  "payload":{"speaker_id":"a88ac568-eafb-452f-8c43-4a988420797b","source_language":"vi","target_language":"en","source_text":"Xin chao","translated_text":"Hello","inference_mode":"server"}
+}
+```
+
+Reconnect using the same token; the newest socket replaces a stale connection. `ping` produces
+`pong`. Duplicate event IDs return `DUPLICATE_EVENT`; repeated/lower sequences return
+`OUT_OF_ORDER_EVENT`; sequence gaps are accepted and logged. Errors use the same envelope with
+`payload.code`, `payload.message`, and `payload.retryable`.
+
+Completed turns enter a bounded per-participant inference queue. The WebSocket receive loop remains
+available for `ping` and the next push-to-talk turn while inference runs, and queued turns are
+processed in submission order. `audio.queued` confirms acceptance. More than four waiting turns are
+rejected with `RATE_LIMITED` by default.
+
+Room recovery and closure use authenticated REST calls:
+
+```http
+GET /rooms/{room_id}
+Authorization: Bearer {access_token}
+
+DELETE /rooms/{room_id}  # creator token only
+Authorization: Bearer {access_token}
+```
+
+Audio turns are limited to 30 seconds and 10 MB by default. Only the room creator has
+`is_owner: true` and may close the room. Set `VBRIDGE_DEPLOYMENT_ENVIRONMENT=production` and a
+private `VBRIDGE_ROOM_TOKEN_SECRET` in deployments; production startup rejects the built-in
+development secret. Tokens are HMAC-signed, room/participant-bound, and expire with the room TTL.

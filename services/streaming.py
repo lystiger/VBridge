@@ -1,11 +1,12 @@
 import wave
 from collections.abc import Awaitable, Callable
 from pathlib import Path
+from uuid import uuid4
 
 from services.metrics import MetricsCollector
 from services.pipeline import PipelineService
 from services.vad import VoiceActivityDetector
-from shared.schemas import AudioRequest, TranslationRequest
+from shared.schemas import AudioRequest, Language, PipelineResponse, TranslationRequest
 
 EventSender = Callable[[dict[str, object]], Awaitable[None]]
 
@@ -22,6 +23,31 @@ class StreamingPipelineService:
         self.pipeline, self.output_dir = pipeline, output_dir
         self.vad, self.partial_interval = vad, partial_interval
         self.metrics = metrics
+
+    async def process_turn(
+        self,
+        audio: bytes,
+        session_id: str,
+        speaker: str,
+        source_language: Language,
+        target_language: Language,
+    ) -> tuple[PipelineResponse, float]:
+        """Process a bounded PCM turn using the existing streaming/pipeline components."""
+        self.vad.reset()
+        for offset in range(0, len(audio), 3200):
+            await self.vad.feed(audio[offset : offset + 3200])
+        path = self._write_wav([audio], session_id, f"{speaker}-{uuid4()}")
+        result = await self.pipeline.process(
+            AudioRequest(
+                session_id=session_id,
+                speaker=speaker,
+                language=source_language,
+                audio_path=str(path),
+            ),
+            target_language=target_language,
+        )
+        audio_duration_ms = len(audio) / 2 / 16_000 * 1000
+        return result, audio_duration_ms
 
     async def run(
         self,
