@@ -11,7 +11,7 @@ Built by **Team SilentVoix** in 48 hours for the
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![React](https://img.shields.io/badge/React-TypeScript-61DAFB?logo=react&logoColor=111)](https://react.dev/)
 [![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)](https://docs.docker.com/compose/)
-[![AI Singapore](https://img.shields.io/badge/AI%20Singapore-Gold%20Sponsor-EF3340)](https://aisingapore.org/)
+[![AI Singapore](https://img.shields.io/badge/Challenge-Sponsored%20by%20AI%20Singapore-EF3340)](https://aisingapore.org/)
 
 [Quick start](#quick-start) · [How it works](#how-it-works) · [Two-phone demo](#two-phone-demo) · [API](#api) · [References](#references--acknowledgements)
 
@@ -27,7 +27,7 @@ VBridge keeps a Vietnamese–English conversation flowing when connectivity is u
 Both paths produce one ordered, authenticated result contract, allowing the system to favor privacy and resilience offline or model capacity online without changing the conversation experience.
 
 > [!NOTE]
-> VBridge was created for the 17–19 July 2026, 48-hour Vietnam AI Innovation Challenge. **AI Singapore is a Gold Sponsor and funds the AI Singapore Award with US$5,000 in credits**, connecting standout builders with Singapore's regional AI ecosystem. See the [official challenge page](https://vietnamaichallenge.com/) and [AI Singapore](https://aisingapore.org/).
+> VBridge was created for the 17–19 July 2026 Vietnam AI Innovation Challenge in response to the **Real-Time Vietnamese-English Business Meeting Translator Challenge, sponsored by AI Singapore**. The brief calls for a live, bidirectional, near-real-time meeting translator and offers the winner prize money plus a sponsored 1–2 month visiting researcher experience at AI Singapore's office at Nanyang Technological University.
 
 ## What
 
@@ -266,62 +266,56 @@ cd apps/web && npm run build && npm run lint
 docker compose build
 ```
 
-## Checklist
+## AI Singapore challenge checklist
 
-Use this as the build, demo, and judging checklist.
+This checklist follows the supplied **Real-Time Vietnamese-English Business Meeting Translator Challenge** brief. Status reflects what can be demonstrated from this repository today.
 
-### Product
+### Core requirements
 
-- [x] Vietnamese → English conversation path
-- [x] English → Vietnamese conversation path
-- [x] Two participants receive one authoritative result
-- [x] Six-character room creation and joining flow
-- [x] Responsive push-to-talk web experience
-- [x] On-device relay and server-hosted modes share one contract
-- [ ] Native mobile models replace the current browser device-mode stand-in
+| Status | Requirement from the brief | VBridge answer and demo evidence |
+|:---:|---|---|
+| ✅ | Functional prototype built during the two-day hackathon | The web app, FastAPI service, Docker deployment, and two-phone room form a working end-to-end prototype. |
+| ✅ | Bidirectional Vietnamese ↔ English translation | Each participant selects a speaking direction; the peer uses the opposite direction. Both REST and room contracts carry source and target languages. |
+| ✅ | Live, in-person business meeting use | Two phones join a shared room and exchange push-to-talk turns through one live conversation timeline. |
+| ✅ | Live free-flow judging demo in both languages | Judges can create/join a room, alternate Vietnamese and English turns, and see identical results on both devices. |
+| 🟡 | Strong communication accuracy and low perceived latency | Real ASR/MT modes, per-stage timing, evaluation scripts, and checked-in results exist. Quality must still be demonstrated live on the judging dialogue and hardware. |
+| ✅ | Intuitive, efficient, minimally disruptive UX | Six-character join code, explicit language direction, one hold-to-talk control, automatic delivery, and a mobile layout keep interaction lightweight. |
+| ✅ | Accessible hardware | Runs on laptops and smartphones through the browser; Docker hosts the inference service on ordinary CPU hardware, with an optional CUDA path. |
 
-### Engineering
+Legend: ✅ implemented · 🟡 implemented with live-demo validation still required · ⬜ not yet complete
 
-- [x] VAD → ASR → MT → TTS pipeline boundaries
-- [x] REST and WebSocket interfaces
-- [x] Authenticated, room-bound access tokens
-- [x] Duplicate-event and out-of-order protection
-- [x] Reconnection and bounded turn queues
-- [x] Per-stage and end-to-end latency metrics
-- [x] Docker Compose deployment and CUDA override
-- [ ] Persistent room state for multi-worker scaling
+### Judging rubric
 
-### Evidence for the demo
+| Criterion | Weight | VBridge response | Evidence to present |
+|---|---:|---|---|
+| **Translation accuracy** | **30%** | Bidirectional faster-whisper + NLLB pipeline with repeatable evaluation inputs and outputs. | Run prepared Vietnamese and English business turns; show `vbridge_mt_evaluation.csv` and the evaluation command. |
+| **Latency and responsiveness** | **20%** | Streaming and complete-turn paths expose ASR, MT, TTS, queue, and end-to-end timing. | Show live results and `/metrics`; report the judging-machine measurements rather than a generic claim. |
+| **User experience and meeting flow** | **20%** | Two-device room, six-character pairing, language direction, push-to-talk, transcript, translation, and audio output. | Let a judge join as the second participant and conduct an alternating conversation without operator intervention. |
+| **Robustness in realistic conditions** | **15%** | VAD, bounded turn queues, reconnect handling, speaker identity, ordered events, and noise robustness experiments. | Demo alternating speakers and background noise; show the ASR noise chart and recovery behavior. |
+| **Technical design and deployability** | **15%** | Modular services, canonical events, authenticated rooms, REST/WebSocket APIs, health checks, metrics, containers, and two inference modes. | Use the architecture diagram, OpenAPI docs, and a clean Docker startup. |
 
-- [x] Real UI screenshots captured with Playwright
-- [x] Repeatable ASR/MT evaluation scripts and checked-in results
-- [x] Architecture and event-flow diagrams
-- [x] Interactive OpenAPI documentation
-- [x] Mock mode for a fast, deterministic product walkthrough
-- [ ] Target-device benchmark for quantized on-device models
-- [ ] User study with Vietnamese accents and noisy real-world rooms
+### Bonus considerations
 
-## Questions AI Singapore may ask
+| Status | Bonus in the brief | VBridge implementation or gap |
+|:---:|---|---|
+| ✅ | **Open AI models hosted on-premise** | faster-whisper, NLLB-200, and Silero VAD run on the VBridge host; meeting audio does not need a third-party inference API. |
+| 🟡 | **Edge-device deployment** | The shared protocol and Android proof-of-concept support the edge architecture. The web device-mode path still uses the server pipeline as a declared stand-in; native quantized inference remains to be completed and benchmarked. |
+| 🟡 | **Effective in noisy environments** | The repository includes VAD and ASR robustness experiments across clean, light, medium, and heavy noise. This still needs a repeatable live noisy-room demonstration. |
+| ✅ | **Conversational turn-taking** | Participant identity, ordered sequences, duplicate protection, bounded queues, and one authoritative broadcast preserve alternating turns. |
+| ✅ | **Extensible to more language pairs, especially lower-resource languages** | Language direction is represented in shared contracts and translation is isolated behind a service interface. Adding a pair does not require redesigning rooms or transport. Model coverage and quality must be evaluated per language. |
 
-The challenge does not publish a project-specific interview script. These are the strongest questions to prepare for based on VBridge's technical claims, regional relevance, and the AI Singapore Award—and the evidence already available in this repository.
+### Final live-demo gate
 
-| Likely question | Answer through VBridge | Evidence to show |
-|---|---|---|
-| **What concrete problem are you solving?** | Two people who do not share a language need a private interpreter that continues working with poor or absent connectivity. | Run the two-phone demo and switch between device and server modes. |
-| **Why is this relevant to Southeast Asia?** | The first production path is Vietnamese ↔ English, addressing a major regional language while supporting cross-border work, education, travel, and public services. | Show the language-direction control, Vietnamese dialogue fixtures, and evaluation tooling. |
-| **What is technically novel beyond chaining models?** | Both decentralized and hosted inference obey one authenticated, ordered conversation protocol. The transport can change without changing the user experience or result contract. | Walk through the hybrid Mermaid diagram and the `translation.result` event. |
-| **Does “offline” really mean offline?** | The protocol and relay design do; the current browser demo uses a server call as an explicitly documented stand-in for native on-device models. Full offline inference is the next implementation milestone. | Point to the device-mode implementation comments, architecture diagram, and unchecked native-model checklist item. |
-| **How do you protect privacy?** | Device mode is designed to keep raw audio on the phones. Room access is token-bound, turns are ordered, and the relay accepts finished results instead of audio. | Demonstrate device mode and inspect the room authentication contract. |
-| **How do you know translation quality is good?** | VBridge ships evaluation scripts and artifacts, states the test conditions, and avoids treating one score as universal performance. | Run `scripts/eval/run.py`; show `vbridge_mt_evaluation.csv` and the robustness chart. |
-| **How do you handle noisy, real conversations?** | The pipeline includes VAD, streaming turn boundaries, queueing, and ASR robustness experiments across noise levels. | Show Silero VAD configuration and `chart_model_comparison.png`. |
-| **Can it scale beyond a hackathon demo?** | The API, model services, contracts, containers, health checks, and metrics are deployment-shaped. Process-local room state is clearly identified as the next scaling boundary. | Open `/docs`, `/health`, `/metrics`, and explain the single-worker constraint. |
-| **Why should AI Singapore support this project?** | VBridge is a practical bridge between Vietnam and Singapore: regional language technology, privacy-aware deployment, and measurable pathways from prototype to field testing. AI Singapore can accelerate on-device optimization, regional evaluation, and ecosystem access. | Present the roadmap and a proposed Vietnam–Singapore pilot. |
-| **Where could SEA-LION contribute?** | SEA-LION is not currently presented as an implemented dependency. It is a strong candidate for contextual correction, terminology handling, multilingual expansion, and regional evaluation—subject to latency and device-fit benchmarks. | Propose an A/B evaluation against the current NLLB translation path; do not claim integration before it exists. |
-| **What would you do with the AI Singapore Award?** | Benchmark a SEA-LION-assisted translation path, quantize the on-device stack, expand Vietnamese accent/noise datasets, and run a two-country pilot with reproducible quality and latency reports. | Tie each work package to an unchecked checklist item and a measurable acceptance target. |
-
-### A crisp 60-second answer
-
-> VBridge is a privacy-first Vietnamese–English meeting interpreter. It works in two modes: phones can infer locally while a host only relays results, or a host can run stronger speech and translation models when compute is available. The innovation is not simply ASR plus translation—it is one authenticated, ordered conversation contract that works across both deployment modes. We can demonstrate it on two phones, measure every pipeline stage, and reproduce our evaluation. With AI Singapore's support, we would benchmark SEA-LION for regional language improvement, complete quantized native inference, and validate the system in a Vietnam–Singapore pilot.
+- [ ] Start the real-model stack on the exact judging hardware before the session.
+- [ ] Warm model weights and record cold-start versus warm-turn latency.
+- [ ] Test at least three Vietnamese → English and three English → Vietnamese business turns.
+- [ ] Include names, numbers, dates, and business terminology in the accuracy test.
+- [ ] Run alternating speakers without an operator touching the host.
+- [ ] Add controlled background noise and confirm VAD and turn completion remain usable.
+- [ ] Disconnect and reconnect one phone without losing room identity.
+- [ ] Demonstrate that both phones receive the same ordered translation result.
+- [ ] Keep the deterministic mock stack ready only as a transport/UI fallback, clearly labelled as mock.
+- [ ] State the edge-device limitation accurately; do not present the browser stand-in as native offline inference.
 
 ## Roadmap
 
@@ -335,8 +329,8 @@ The challenge does not publish a project-specific interview script. These are th
 VBridge stands on open research and a regional innovation community:
 
 - [Vietnam AI Innovation Challenge 2026](https://vietnamaichallenge.com/) — official event, award, sponsor, and organizer information.
-- [AI Singapore](https://aisingapore.org/) — Gold Sponsor of VAIC 2026 and sponsor of the AI Singapore Award; a national AI programme supported by Singapore's National Research Foundation and hosted by the National University of Singapore.
-- [SEA-LION](https://sea-lion.ai/) — AI Singapore's open, Southeast Asia–focused language model initiative and an important reference for inclusive regional AI.
+- [AI Singapore](https://aisingapore.org/) — sponsor of the Real-Time Vietnamese-English Business Meeting Translator Challenge. The supplied brief includes prize money and a sponsored 1–2 month visiting researcher experience at its NTU office for the winning team.
+- [SEA-LION](https://sea-lion.ai/) — AI Singapore's open, Southeast Asia–focused language model initiative and a future evaluation candidate; it is not currently an implemented VBridge dependency.
 - [National Innovation Center, Vietnam](https://nic.gov.vn/) — co-organizer and home of Vietnam's national innovation ecosystem.
 - [AI for Vietnam Foundation](https://aiforvietnam.org/) — challenge co-organizer and builder community.
 - [faster-whisper](https://github.com/SYSTRAN/faster-whisper) and the [Whisper paper](https://arxiv.org/abs/2212.04356) — efficient speech recognition and its research foundation.
