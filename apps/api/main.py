@@ -8,6 +8,7 @@ from fastapi import (
     FastAPI,
     File,
     Form,
+    HTTPException,
     Request,
     UploadFile,
     WebSocket,
@@ -15,10 +16,20 @@ from fastapi import (
 )
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from pydantic import ValidationError
 
-from apps.api.dependencies import get_metrics_collector, get_pipeline_service
+from apps.api.dependencies import (
+    get_metrics_collector,
+    get_pipeline_service,
+    get_session_manager,
+)
 from services.metrics import MetricsCollector
 from services.pipeline import PipelineService
+from services.sessions import (
+    ParticipantNotFoundError,
+    SessionManager,
+    SessionNotFoundError,
+)
 from services.streaming import StreamingPipelineService
 from services.vad import EnergyVAD, SileroVAD
 from shared.config import get_settings
@@ -28,11 +39,15 @@ from shared.schemas import (
     AudioRequest,
     HealthResponse,
     MetricsResponse,
+    ParticipantJoinRequest,
+    ParticipantResponse,
     PipelineResponse,
+    SessionCreateResponse,
     TranslationRequest,
     TranslationResponse,
     TTSRequest,
     TTSResponse,
+    TurnStartRequest,
 )
 
 settings = get_settings()
@@ -46,6 +61,79 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.mount("/audio", StaticFiles(directory=settings.audio_output_dir), name="audio")
+
+
+@app.post("/sessions", response_model=SessionCreateResponse, status_code=201)
+async def create_session(
+    manager: Annotated[SessionManager, Depends(get_session_manager)],
+) -> SessionCreateResponse:
+    session = await manager.create_session()
+    return SessionCreateResponse(session_id=session.session_id)
+
+
+@app.post("/sessions/{session_id}/participants", response_model=ParticipantResponse)
+async def join_session(
+    session_id: str,
+    request: ParticipantJoinRequest,
+    manager: Annotated[SessionManager, Depends(get_session_manager)],
+) -> ParticipantResponse:
+    try:
+        return await manager.join(
+            session_id,
+            request.source_language,
+            request.target_language,
+            request.participant_id,
+        )
+    except SessionNotFoundError as exc:
+        raise HTTPException(status_code=404, detail="session not found") from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+
+@app.websocket("/sessions/{session_id}/ws")
+async def session_websocket(
+    websocket: WebSocket,
+    session_id: str,
+    manager: Annotated[SessionManager, Depends(get_session_manager)],
+) -> None:
+    participant_id = websocket.query_params.get("participant_id", "")
+    await websocket.accept()
+    try:
+        participant = await manager.connect(session_id, participant_id, websocket)
+    except (SessionNotFoundError, ParticipantNotFoundError):
+        await websocket.send_json({"type": "error", "code": "not_found"})
+        await websocket.close(code=4404)
+        return
+    try:
+        while True:
+            try:
+                metadata = TurnStartRequest.model_validate(await websocket.receive_json())
+                audio = await websocket.receive_bytes()
+                status = await manager.submit_turn(
+                    session_id,
+                    participant.participant_id,
+                    metadata.sequence,
+                    audio,
+                    metadata.source_language,
+                    metadata.target_language,
+                )
+                await websocket.send_json(
+                    {
+                        "type": "turn.accepted",
+                        "session_id": session_id,
+                        "participant_id": participant.participant_id,
+                        "sequence": metadata.sequence,
+                        "status": status,
+                    }
+                )
+            except (ValidationError, ValueError) as exc:
+                await websocket.send_json(
+                    {"type": "error", "code": "invalid_turn", "detail": str(exc)}
+                )
+    except WebSocketDisconnect:
+        pass
+    finally:
+        await manager.disconnect(session_id, participant.participant_id, websocket)
 
 
 def wav_duration_ms(path: str) -> float | None:

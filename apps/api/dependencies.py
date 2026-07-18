@@ -3,6 +3,7 @@ from functools import lru_cache
 from services.asr import FasterWhisperASRService, MockASRService
 from services.metrics import MetricsCollector
 from services.pipeline import PipelineService
+from services.sessions import SessionManager
 from services.translation import MockTranslationService, NLLBTranslationService
 from services.tts import MockTTSService
 from shared.config import get_settings
@@ -37,4 +38,14 @@ def get_metrics_collector() -> MetricsCollector:
         settings.mt_model if settings.mt_mode == "real" else "mock",
         settings.asr_mode,
         settings.mt_mode,
+    )
+
+
+@lru_cache
+def get_session_manager() -> SessionManager:
+    settings = get_settings()
+    return SessionManager(
+        get_pipeline_service(),
+        get_metrics_collector(),
+        settings.audio_output_dir / "session-turns",
     )
