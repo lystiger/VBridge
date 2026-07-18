@@ -122,8 +122,9 @@ require a single API worker until shared storage is introduced.
 
 ## Two-phone room protocol
 
-Rooms are process-local and support exactly two participants. Run one API worker; room state is
-lost when the server restarts. Existing inference and `/pipeline/stream` endpoints are unchanged.
+Rooms are process-local and support exactly two participants. The configuration rejects
+`VBRIDGE_API_WORKERS` values other than `1`; room state is lost when the server restarts. Existing
+inference and `/pipeline/stream` endpoints are unchanged.
 
 Phone A creates a room:
 
@@ -185,16 +186,22 @@ Reconnect using the same token; the newest socket replaces a stale connection. `
 `OUT_OF_ORDER_EVENT`; sequence gaps are accepted and logged. Errors use the same envelope with
 `payload.code`, `payload.message`, and `payload.retryable`.
 
+Completed turns enter a bounded per-participant inference queue. The WebSocket receive loop remains
+available for `ping` and the next push-to-talk turn while inference runs, and queued turns are
+processed in submission order. `audio.queued` confirms acceptance. More than four waiting turns are
+rejected with `RATE_LIMITED` by default.
+
 Room recovery and closure use authenticated REST calls:
 
 ```http
 GET /rooms/{room_id}
 Authorization: Bearer {access_token}
 
-DELETE /rooms/{room_id}
+DELETE /rooms/{room_id}  # creator token only
 Authorization: Bearer {access_token}
 ```
 
-Audio turns are limited to 30 seconds and 10 MB by default. Set a private
-`VBRIDGE_ROOM_TOKEN_SECRET` in deployments; tokens are HMAC-signed, room/participant-bound, and
-expire with the room TTL.
+Audio turns are limited to 30 seconds and 10 MB by default. Only the room creator has
+`is_owner: true` and may close the room. Set `VBRIDGE_DEPLOYMENT_ENVIRONMENT=production` and a
+private `VBRIDGE_ROOM_TOKEN_SECRET` in deployments; production startup rejects the built-in
+development secret. Tokens are HMAC-signed, room/participant-bound, and expire with the room TTL.
