@@ -10,6 +10,7 @@ sẽ không tính được % chính xác cho nó, chỉ in ra transcript + cờ 
 Cài đặt: pip install pydub
 Chạy: python3 generate_pause_test_audio.py
 """
+
 from pathlib import Path
 
 from pydub import AudioSegment
@@ -17,6 +18,7 @@ from pydub import AudioSegment
 # Dùng thẳng ffmpeg đi kèm gói imageio-ffmpeg (cài qua pip), không cần PATH
 try:
     import imageio_ffmpeg
+
     AudioSegment.converter = imageio_ffmpeg.get_ffmpeg_exe()
 except ImportError:
     pass  # nếu chưa cài imageio-ffmpeg, dùng ffmpeg hệ thống như bình thường
@@ -39,11 +41,15 @@ def main():
 
     Path("test_audio").mkdir(exist_ok=True)
     combined.export(OUTPUT, format="wav")
-    print(f"Đã tạo {OUTPUT} — dài {len(combined)/1000:.1f}s "
-          f"(gồm: câu 1 + {SILENCE_MS/1000:.0f}s im lặng + câu 2)")
-    print("File này sẽ được tune_vad_whisper_scored.py chạy qua 9 tổ hợp, "
-          "nhưng KHÔNG tính % chính xác - bạn cần tự đọc transcript in ra để "
-          "kiểm tra xem model có tự bịa chữ trong đoạn im lặng không.")
+    print(
+        f"Đã tạo {OUTPUT} — dài {len(combined) / 1000:.1f}s "
+        f"(gồm: câu 1 + {SILENCE_MS / 1000:.0f}s im lặng + câu 2)"
+    )
+    print(
+        "File này sẽ được tune_vad_whisper_scored.py chạy qua 9 tổ hợp, "
+        "nhưng KHÔNG tính % chính xác - bạn cần tự đọc transcript in ra để "
+        "kiểm tra xem model có tự bịa chữ trong đoạn im lặng không."
+    )
 
 
 if __name__ == "__main__":

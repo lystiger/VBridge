@@ -44,9 +44,7 @@ def word_error_rate(hyp: str, ref: str) -> float:
     for i in range(1, len(r) + 1):
         for j in range(1, len(h) + 1):
             cost = 0 if r[i - 1] == h[j - 1] else 1
-            d[i][j] = min(
-                d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + cost
-            )
+            d[i][j] = min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + cost)
     return d[len(r)][len(h)] / len(r)
 
 
@@ -124,9 +122,7 @@ def main():
             beam_size=CHOSEN_WHISPER["beam_size"],
             no_speech_threshold=CHOSEN_WHISPER["no_speech_threshold"],
             log_prob_threshold=CHOSEN_WHISPER["log_prob_threshold"],
-            compression_ratio_threshold=CHOSEN_WHISPER[
-                "compression_ratio_threshold"
-            ],
+            compression_ratio_threshold=CHOSEN_WHISPER["compression_ratio_threshold"],
         )
         segments = list(segments_gen)
         latency = time.time() - t0
@@ -167,10 +163,7 @@ def main():
     print(f"Độ trễ trung bình: {overall_latency:.2f}s")
     print(f"\nTheo mức độ nhiễu:\n{by_level.to_string()}")
     print(f"\nTheo loại nhiễu:\n{by_type.to_string()}")
-    print(
-        "\nĐã lưu final_validation_detail.csv — dùng số liệu "
-        "này cho slide/báo cáo cuối cùng."
-    )
+    print("\nĐã lưu final_validation_detail.csv — dùng số liệu này cho slide/báo cáo cuối cùng.")
 
 
 if __name__ == "__main__":

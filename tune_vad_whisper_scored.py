@@ -8,35 +8,47 @@ from faster_whisper import WhisperModel
 AUDIO_DIR = Path("test_audio")
 DIALOGUE_MD = Path("dataset/dialogues/test_dialogues.md")
 WHISPER_MODEL_SIZE = "small"
-LANGUAGE = None  
+LANGUAGE = None
 
 VAD_PRESETS = {
     "nhay_cao": {
-        "threshold": 0.35, "min_silence_duration_ms": 400,
-        "min_speech_duration_ms": 200, "speech_pad_ms": 150,
+        "threshold": 0.35,
+        "min_silence_duration_ms": 400,
+        "min_speech_duration_ms": 200,
+        "speech_pad_ms": 150,
     },
     "can_bang": {
-        "threshold": 0.5, "min_silence_duration_ms": 650,
-        "min_speech_duration_ms": 250, "speech_pad_ms": 150,
+        "threshold": 0.5,
+        "min_silence_duration_ms": 650,
+        "min_speech_duration_ms": 250,
+        "speech_pad_ms": 150,
     },
     "bao_thu": {
-        "threshold": 0.65, "min_silence_duration_ms": 900,
-        "min_speech_duration_ms": 300, "speech_pad_ms": 200,
+        "threshold": 0.65,
+        "min_silence_duration_ms": 900,
+        "min_speech_duration_ms": 300,
+        "speech_pad_ms": 200,
     },
 }
 
 WHISPER_PRESETS = {
     "mac_dinh": {
-        "beam_size": 1, "no_speech_threshold": 0.6,
-        "log_prob_threshold": -1.0, "compression_ratio_threshold": 2.4,
+        "beam_size": 1,
+        "no_speech_threshold": 0.6,
+        "log_prob_threshold": -1.0,
+        "compression_ratio_threshold": 2.4,
     },
     "chong_hallucination_manh": {
-        "beam_size": 1, "no_speech_threshold": 0.75,
-        "log_prob_threshold": -0.8, "compression_ratio_threshold": 2.2,
+        "beam_size": 1,
+        "no_speech_threshold": 0.75,
+        "log_prob_threshold": -0.8,
+        "compression_ratio_threshold": 2.2,
     },
     "chat_luong_cao_cham_hon": {
-        "beam_size": 5, "no_speech_threshold": 0.6,
-        "log_prob_threshold": -1.0, "compression_ratio_threshold": 2.4,
+        "beam_size": 5,
+        "no_speech_threshold": 0.6,
+        "log_prob_threshold": -1.0,
+        "compression_ratio_threshold": 2.4,
     },
 }
 
@@ -105,8 +117,11 @@ def looks_like_hallucination(segments) -> list:
 def run_one(model, audio_path, vad_params, whisper_params, language):
     started = time.perf_counter()
     segments_gen, info = model.transcribe(
-        str(audio_path), language=language, vad_filter=True,
-        vad_parameters=vad_params, beam_size=whisper_params["beam_size"],
+        str(audio_path),
+        language=language,
+        vad_filter=True,
+        vad_parameters=vad_params,
+        beam_size=whisper_params["beam_size"],
         no_speech_threshold=whisper_params["no_speech_threshold"],
         log_prob_threshold=whisper_params["log_prob_threshold"],
         compression_ratio_threshold=whisper_params["compression_ratio_threshold"],
@@ -127,8 +142,9 @@ def main():
     print(f"Đang load Whisper model '{WHISPER_MODEL_SIZE}'...")
     model = WhisperModel(WHISPER_MODEL_SIZE, device="cpu", compute_type="int8")
 
-    audio_files = sorted([f for f in AUDIO_DIR.iterdir()
-                           if f.suffix.lower() in (".wav", ".mp3", ".m4a", ".flac")])
+    audio_files = sorted(
+        [f for f in AUDIO_DIR.iterdir() if f.suffix.lower() in (".wav", ".mp3", ".m4a", ".flac")]
+    )
     print(f"Tìm thấy {len(audio_files)} file audio\n")
 
     rows = []
@@ -142,8 +158,10 @@ def main():
             ref_text, lang = references[file_id]
         else:
             ref_text, lang = None, "vi"
-            print(f"ℹ️  {audio_path.name}: không có đáp án chuẩn — vẫn chạy để kiểm tra "
-                  f"hallucination, không tính % chính xác")
+            print(
+                f"ℹ️  {audio_path.name}: không có đáp án chuẩn — vẫn chạy để kiểm tra "
+                f"hallucination, không tính % chính xác"
+            )
 
         effective_lang = LANGUAGE or lang
         print(f"Đang xử lý {audio_path.name}...")
@@ -156,17 +174,27 @@ def main():
                 if has_ref:
                     wer = word_error_rate(text, ref_text)
                     accuracy = max(0.0, 1 - wer) * 100
-                    rows.append({
-                        "file": audio_path.name, "vad_preset": vad_name,
-                        "whisper_preset": whisper_name, "accuracy_pct": round(accuracy, 1),
-                        "latency_s": round(latency, 2), "hallucination_flags": n_flags,
-                    })
+                    rows.append(
+                        {
+                            "file": audio_path.name,
+                            "vad_preset": vad_name,
+                            "whisper_preset": whisper_name,
+                            "accuracy_pct": round(accuracy, 1),
+                            "latency_s": round(latency, 2),
+                            "hallucination_flags": n_flags,
+                        }
+                    )
                 else:
-                    no_ref_results.append({
-                        "file": audio_path.name, "vad_preset": vad_name,
-                        "whisper_preset": whisper_name, "text": text,
-                        "latency_s": round(latency, 2), "hallucination_flags": n_flags,
-                    })
+                    no_ref_results.append(
+                        {
+                            "file": audio_path.name,
+                            "vad_preset": vad_name,
+                            "whisper_preset": whisper_name,
+                            "text": text,
+                            "latency_s": round(latency, 2),
+                            "hallucination_flags": n_flags,
+                        }
+                    )
 
     if no_ref_results:
         print("\n" + "=" * 70)
@@ -174,13 +202,12 @@ def main():
         print("=" * 70)
         for r in no_ref_results:
             flag_marker = (
-    f" ⚠️ {r['hallucination_flags']} cờ nghi ngờ"
-    if r["hallucination_flags"]
-    else " ✅ sạch"
-)
-            print(f"[{r['vad_preset']} + {r['whisper_preset']}]{flag_marker} "
-                  f"({r['latency_s']}s)")
-            print(f"   \"{r['text']}\"")
+                f" ⚠️ {r['hallucination_flags']} cờ nghi ngờ"
+                if r["hallucination_flags"]
+                else " ✅ sạch"
+            )
+            print(f"[{r['vad_preset']} + {r['whisper_preset']}]{flag_marker} ({r['latency_s']}s)")
+            print(f'   "{r["text"]}"')
         print()
 
     if not rows:
@@ -190,11 +217,16 @@ def main():
     df = pd.DataFrame(rows)
     df.to_csv("vad_whisper_tuning_detail.csv", index=False, encoding="utf-8")
 
-    summary = df.groupby(["vad_preset", "whisper_preset"]).agg(
-        avg_accuracy=("accuracy_pct", "mean"),
-        avg_latency=("latency_s", "mean"),
-        total_flags=("hallucination_flags", "sum"),
-    ).reset_index().sort_values("avg_accuracy", ascending=False)
+    summary = (
+        df.groupby(["vad_preset", "whisper_preset"])
+        .agg(
+            avg_accuracy=("accuracy_pct", "mean"),
+            avg_latency=("latency_s", "mean"),
+            total_flags=("hallucination_flags", "sum"),
+        )
+        .reset_index()
+        .sort_values("avg_accuracy", ascending=False)
+    )
     summary.to_csv("vad_whisper_tuning_summary.csv", index=False)
 
     print("\n" + "=" * 70)
@@ -203,16 +235,19 @@ def main():
     print(summary.to_string(index=False))
 
     best = summary.iloc[0]
-    print(f"\n✅ BỘ THAM SỐ TỐT NHẤT: VAD='{best['vad_preset']}' + "
-          f"Whisper='{best['whisper_preset']}'")
-    print(f"   Độ chính xác trung bình: {best['avg_accuracy']:.1f}%  |  "
-          f"Độ trễ trung bình: {best['avg_latency']:.2f}s  |  "
-          f"Tổng cờ nghi ngờ hallucination: {int(best['total_flags'])}")
+    print(
+        f"\n✅ BỘ THAM SỐ TỐT NHẤT: VAD='{best['vad_preset']}' + Whisper='{best['whisper_preset']}'"
+    )
+    print(
+        f"   Độ chính xác trung bình: {best['avg_accuracy']:.1f}%  |  "
+        f"Độ trễ trung bình: {best['avg_latency']:.2f}s  |  "
+        f"Tổng cờ nghi ngờ hallucination: {int(best['total_flags'])}"
+    )
     print("\nGiá trị số thật để gửi cho bên Android:")
     print(f"   VAD_PRESETS['{best['vad_preset']}'] = {VAD_PRESETS[best['vad_preset']]}")
     print(
-    f"   WHISPER_PRESETS['{best['whisper_preset']}'] = "
-    f"{WHISPER_PRESETS[best['whisper_preset']]}"
+        f"   WHISPER_PRESETS['{best['whisper_preset']}'] = "
+        f"{WHISPER_PRESETS[best['whisper_preset']]}"
     )
     print("\nĐã lưu vad_whisper_tuning_detail.csv và vad_whisper_tuning_summary.csv")
 

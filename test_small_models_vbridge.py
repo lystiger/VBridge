@@ -28,7 +28,7 @@ DIALOGUE_MD = Path("dataset/dialogues/test_dialogues.md")
 
 # Model NHỎ cần so sánh — bớt "small" nếu máy chạy chậm quá
 MODELS_TO_TEST = ["tiny", "base", "small"]
-DEVICE = "cpu"          # đổi "cuda" nếu có GPU rời
+DEVICE = "cpu"  # đổi "cuda" nếu có GPU rời
 COMPUTE_TYPE = "int8"
 
 # Thứ tự hiển thị trên biểu đồ — khớp đúng tên thư mục thật, KHÔNG đổi tên
@@ -91,12 +91,9 @@ def collect_test_files() -> list[dict]:
     if not CLEAN_DIR.exists():
         raise FileNotFoundError(f"Không tìm thấy {CLEAN_DIR}")
     for f in sorted(CLEAN_DIR.glob("*.wav")):
-        files.append({
-    "path": f, 
-    "file_id": extract_id(f.stem), 
-    "noise_type": "none", 
-    "level": "clean"
-})
+        files.append(
+            {"path": f, "file_id": extract_id(f.stem), "noise_type": "none", "level": "clean"}
+        )
     if NOISY_DIR.exists():
         for noise_type_dir in sorted(NOISY_DIR.iterdir()):
             if not noise_type_dir.is_dir():
@@ -105,10 +102,14 @@ def collect_test_files() -> list[dict]:
                 if not level_dir.is_dir():
                     continue
                 for f in sorted(level_dir.glob("*.wav")):
-                    files.append({
-                        "path": f, "file_id": extract_id(f.stem),
-                        "noise_type": noise_type_dir.name, "level": level_dir.name,
-                    })
+                    files.append(
+                        {
+                            "path": f,
+                            "file_id": extract_id(f.stem),
+                            "noise_type": noise_type_dir.name,
+                            "level": level_dir.name,
+                        }
+                    )
     return files
 
 
@@ -127,16 +128,18 @@ def run():
     all_rows = []
 
     for model_name in MODELS_TO_TEST:
-        print(f"\n{'='*60}\nĐANG TẢI MODEL: {model_name}\n{'='*60}")
+        print(f"\n{'=' * 60}\nĐANG TẢI MODEL: {model_name}\n{'=' * 60}")
         t_load = time.time()
         model = WhisperModel(model_name, device=DEVICE, compute_type=COMPUTE_TYPE)
-        print(f"Tải xong sau {time.time()-t_load:.1f}s")
+        print(f"Tải xong sau {time.time() - t_load:.1f}s")
 
         for i, item in enumerate(test_files, 1):
             file_id = item["file_id"]
             if file_id not in references:
-                print(f"  ⚠️  Bỏ qua {item['path']}: không tìm thấy đáp án cho id '{file_id}' "
-                      f"trong test_dialogues.md")
+                print(
+                    f"  ⚠️  Bỏ qua {item['path']}: không tìm thấy đáp án cho id '{file_id}' "
+                    f"trong test_dialogues.md"
+                )
                 continue
             ref_text, lang = references[file_id]
 
@@ -148,12 +151,18 @@ def run():
             wer = word_error_rate(hyp_text, ref_text)
             accuracy = max(0.0, 1 - wer) * 100
 
-            all_rows.append({
-                "model": model_name, "file_id": file_id,
-                "noise_type": item["noise_type"], "level": item["level"],
-                "latency_s": round(latency, 3), "accuracy_pct": round(accuracy, 1),
-                "hypothesis": hyp_text, "reference": ref_text,
-            })
+            all_rows.append(
+                {
+                    "model": model_name,
+                    "file_id": file_id,
+                    "noise_type": item["noise_type"],
+                    "level": item["level"],
+                    "latency_s": round(latency, 3),
+                    "accuracy_pct": round(accuracy, 1),
+                    "hypothesis": hyp_text,
+                    "reference": ref_text,
+                }
+            )
             if i % 10 == 0:
                 print(f"  ...đã xử lý {i}/{len(test_files)} file")
 
@@ -167,11 +176,15 @@ def run():
     df.to_csv("asr_model_comparison_detail.csv", index=False, encoding="utf-8")
     print(f"\nĐã lưu asr_model_comparison_detail.csv ({len(df)} dòng)")
 
-    summary = df.groupby(["model", "level"]).agg(
-        avg_accuracy=("accuracy_pct", "mean"),
-        avg_latency=("latency_s", "mean"),
-        num_files=("file_id", "count"),
-    ).reset_index()
+    summary = (
+        df.groupby(["model", "level"])
+        .agg(
+            avg_accuracy=("accuracy_pct", "mean"),
+            avg_latency=("latency_s", "mean"),
+            num_files=("file_id", "count"),
+        )
+        .reset_index()
+    )
     summary.to_csv("asr_model_comparison_summary.csv", index=False)
     print("Đã lưu asr_model_comparison_summary.csv\n")
     print(summary.to_string(index=False))
