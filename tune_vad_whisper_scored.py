@@ -173,7 +173,11 @@ def main():
         print("KẾT QUẢ FILE KHÔNG CÓ ĐÁP ÁN (vd file test khoảng lặng) — tự đọc để kiểm tra")
         print("=" * 70)
         for r in no_ref_results:
-            flag_marker = f"  ⚠️  {r['hallucination_flags']} cờ nghi ngờ" if r["hallucination_flags"] else "  ✅ sạch"
+            flag_marker = (
+    f" ⚠️ {r['hallucination_flags']} cờ nghi ngờ"
+    if r["hallucination_flags"]
+    else " ✅ sạch"
+)
             print(f"[{r['vad_preset']} + {r['whisper_preset']}]{flag_marker} "
                   f"({r['latency_s']}s)")
             print(f"   \"{r['text']}\"")
@@ -206,7 +210,10 @@ def main():
           f"Tổng cờ nghi ngờ hallucination: {int(best['total_flags'])}")
     print("\nGiá trị số thật để gửi cho bên Android:")
     print(f"   VAD_PRESETS['{best['vad_preset']}'] = {VAD_PRESETS[best['vad_preset']]}")
-    print(f"   WHISPER_PRESETS['{best['whisper_preset']}'] = {WHISPER_PRESETS[best['whisper_preset']]}")
+    print(
+    f"   WHISPER_PRESETS['{best['whisper_preset']}'] = "
+    f"{WHISPER_PRESETS[best['whisper_preset']]}"
+    )
     print("\nĐã lưu vad_whisper_tuning_detail.csv và vad_whisper_tuning_summary.csv")
 
 

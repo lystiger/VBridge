@@ -72,7 +72,12 @@ def load_references() -> dict:
 def collect_all_files() -> list[dict]:
     files = []
     for f in sorted(CLEAN_DIR.glob("*.wav")):
-        files.append({"path": f, "file_id": extract_id(f.stem), "noise_type": "clean", "level": "clean"})
+        files.append({
+    "path": f, 
+    "file_id": extract_id(f.stem), 
+    "noise_type": "clean", 
+    "level": "clean"
+})
     for noise_type_dir in sorted(NOISY_DIR.iterdir()):
         if not noise_type_dir.is_dir():
             continue
