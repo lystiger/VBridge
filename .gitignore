@@ -15,4 +15,17 @@ models/
 dataset/audio/
 vbridge_model/
 *.onnx
-apps/
+
+# Android / Gradle build artifacts
+.gradle/
+build/
+local.properties
+*.apk
+*.aab
+*.keystore
+.cxx/
+captures/
+
+# On-device Android app is developed in its own repo (VBridgeDemo) and carries large
+# native .so binaries; keep it out of the server repo. Remove this line to vendor it here.
+apps/android-pol/

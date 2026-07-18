@@ -6,7 +6,13 @@ from typing import Any
 from uuid import uuid4
 
 from shared.logging import log_event
-from shared.schemas import Language, RoomParticipant, RoomStateResponse, RoomStatus
+from shared.schemas import (
+    InferenceMode,
+    Language,
+    RoomParticipant,
+    RoomStateResponse,
+    RoomStatus,
+)
 
 ROOM_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
 
@@ -68,6 +74,7 @@ class Room:
     created_at: datetime
     updated_at: datetime
     expires_at: datetime
+    inference_mode: InferenceMode = "server"
     participants: dict[str, Participant] = field(default_factory=dict)
     processed_event_ids: set[str] = field(default_factory=set)
     last_sequence_by_participant: dict[str, int] = field(default_factory=dict)
@@ -83,7 +90,11 @@ class InMemoryRoomManager:
         self.max_participants = max_participants
 
     async def create_room(
-        self, display_name: str, source_language: Language, target_language: Language
+        self,
+        display_name: str,
+        source_language: Language,
+        target_language: Language,
+        inference_mode: InferenceMode = "server",
     ) -> tuple[Room, Participant]:
         now = datetime.now(UTC)
         async with self._lock:
@@ -98,6 +109,7 @@ class InMemoryRoomManager:
                 created_at=now,
                 updated_at=now,
                 expires_at=now + self.ttl,
+                inference_mode=inference_mode,
                 participants={participant.participant_id: participant},
             )
             self._rooms[room.room_id] = room
@@ -242,6 +254,7 @@ class InMemoryRoomManager:
             room_id=room.room_id,
             room_code=room.room_code,
             status=room.status,
+            inference_mode=room.inference_mode,
             participant_count=len(room.participants),
             participants=[self.participant_schema(item) for item in room.participants.values()],
             expires_at=room.expires_at,

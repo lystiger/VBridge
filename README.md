@@ -126,13 +126,36 @@ Rooms are process-local and support exactly two participants. The configuration 
 `VBRIDGE_API_WORKERS` values other than `1`; room state is lost when the server restarts. Existing
 inference and `/pipeline/stream` endpoints are unchanged.
 
-Phone A creates a room:
+Rooms run in one of two inference modes, fixed by the creator (this proves the hybrid
+pursuit — offline self-inference and a host server — with one shared result contract):
+
+- `"server"` (default, Scenario 2): the host runs the ASR → MT → TTS pipeline. Phones push
+  audio (`audio.start` / PCM frames / `audio.end`) and the host broadcasts the authoritative
+  `translation.result` with `payload.inference_mode = "server"`.
+- `"device"` (Scenario 1): phones self-infer on-device and send a finished
+  `translation.result` event; the host validates identity/ordering and relays one identical
+  copy to both phones with `payload.inference_mode = "device"`. The host runs no inference and
+  rejects `audio.start` / binary audio in this mode.
+
+Phone A creates a room (add `"inference_mode":"device"` for the relay scenario):
 
 ```http
 POST /rooms
 Content-Type: application/json
 
-{"display_name":"Phone A","source_language":"vi","target_language":"en"}
+{"display_name":"Phone A","source_language":"vi","target_language":"en","inference_mode":"server"}
+```
+
+The `inference_mode` is echoed in the `POST /rooms` response, `GET /rooms/{room_id}`, and the
+broadcast `room.state`. In device mode a phone sends its locally computed result:
+
+```json
+{
+  "type":"translation.result",
+  "event_id":"7c2f...","room_id":"8b1b...","participant_id":"a88a...","sequence":1,
+  "timestamp":"2026-07-19T10:00:00Z",
+  "payload":{"source_language":"vi","target_language":"en","source_text":"Xin chao","translated_text":"Hello","asr_latency_ms":40.0}
+}
 ```
 
 The `201` response contains `room_id`, a six-character `room_code`, the creator participant,

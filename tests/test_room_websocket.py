@@ -156,6 +156,107 @@ def test_two_phones_receive_identical_translation_and_reconnect(tmp_path: Path) 
     app.dependency_overrides.clear()
 
 
+def test_device_room_relays_result_and_rejects_audio(tmp_path: Path) -> None:
+    with make_client(tmp_path) as client:
+        created = client.post(
+            "/rooms",
+            json={
+                "display_name": "Phone A",
+                "source_language": "vi",
+                "target_language": "en",
+                "inference_mode": "device",
+            },
+        ).json()
+        assert created["inference_mode"] == "device"
+        room_id = created["room_id"]
+        first = created["participant"]["participant_id"]
+        with client.websocket_connect(
+            f"/ws/rooms/{room_id}?token={created['access_token']}"
+        ) as phone_a:
+            assert phone_a.receive_json()["type"] == "room.state"
+            joined = client.post(
+                "/rooms/join",
+                json={
+                    "room_code": created["room_code"],
+                    "display_name": "Phone B",
+                    "source_language": "en",
+                    "target_language": "vi",
+                },
+            ).json()
+            receive_until(phone_a, "participant.joined")
+            with client.websocket_connect(
+                f"/ws/rooms/{room_id}?token={joined['access_token']}"
+            ) as phone_b:
+                assert phone_b.receive_json()["type"] == "room.state"
+                receive_until(phone_a, "room.state")
+
+                # Server must not run inference in device mode.
+                phone_a.send_json(
+                    envelope(
+                        "audio.start",
+                        "audio-1",
+                        room_id,
+                        first,
+                        1,
+                        {
+                            "audio_format": "pcm_s16le",
+                            "sample_rate_hz": 16_000,
+                            "channels": 1,
+                            "source_language": "vi",
+                            "target_language": "en",
+                        },
+                    )
+                )
+                rejected = receive_until(phone_a, "error")
+                assert rejected["payload"]["code"] == "INVALID_EVENT"
+
+                # A device-produced result is relayed identically to both phones.
+                phone_a.send_json(
+                    envelope(
+                        "translation.result",
+                        "device-result-1",
+                        room_id,
+                        first,
+                        2,
+                        {
+                            "source_language": "vi",
+                            "target_language": "en",
+                            "source_text": "Xin chao",
+                            "translated_text": "Hello",
+                            "asr_latency_ms": 40.0,
+                        },
+                    )
+                )
+                result_a = receive_until(phone_a, "translation.result")
+                result_b = receive_until(phone_b, "translation.result")
+                assert result_a == result_b
+                assert result_a["event_id"] == "device-result-1"
+                assert result_a["payload"]["inference_mode"] == "device"
+                assert result_a["payload"]["speaker_id"] == first
+                assert result_a["payload"]["translated_text"] == "Hello"
+                assert result_a["payload"]["asr_latency_ms"] == 40.0
+
+                # The same event id is rejected as a duplicate.
+                phone_a.send_json(
+                    envelope(
+                        "translation.result",
+                        "device-result-1",
+                        room_id,
+                        first,
+                        3,
+                        {
+                            "source_language": "vi",
+                            "target_language": "en",
+                            "source_text": "Xin chao",
+                            "translated_text": "Hello",
+                        },
+                    )
+                )
+                duplicate = receive_until(phone_a, "error")
+                assert duplicate["payload"]["code"] == "DUPLICATE_EVENT"
+    app.dependency_overrides.clear()
+
+
 def test_invalid_token_and_malformed_event_are_rejected(tmp_path: Path) -> None:
     with make_client(tmp_path) as client:
         created = client.post(

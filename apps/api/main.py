@@ -48,6 +48,8 @@ from services.rooms import (
 )
 from services.sessions import (
     ParticipantNotFoundError as SessionParticipantNotFoundError,
+)
+from services.sessions import (
     SessionManager,
     SessionNotFoundError,
 )
@@ -249,6 +251,7 @@ def room_access_response(
         room_id=room.room_id,
         room_code=room.room_code,
         status=room.status,
+        inference_mode=room.inference_mode,
         participant=manager.participant_schema(participant),
         access_token=token_service.issue(room.room_id, participant.participant_id),
         expires_at=room.expires_at,
@@ -279,7 +282,10 @@ async def create_room(
     collector: Annotated[MetricsCollector, Depends(get_metrics_collector)],
 ) -> RoomAccessResponse:
     room, participant = await manager.create_room(
-        request.display_name, request.source_language, request.target_language
+        request.display_name,
+        request.source_language,
+        request.target_language,
+        request.inference_mode,
     )
     await collector.increment_room("rooms_created_total")
     await refresh_room_gauges(manager, collector)
@@ -418,6 +424,7 @@ async def room_websocket(
     except RoomUnavailableError:
         await websocket.close(code=WS_ROOM_CLOSED, reason="room unavailable")
         return
+    inference_mode = room.inference_mode
     await collector.increment_room("room_websocket_connections_total")
     await refresh_room_gauges(manager, collector)
     await manager.broadcast(
@@ -426,19 +433,30 @@ async def room_websocket(
     )
     active_turn: dict[str, object] | None = None
     turn_queue: asyncio.Queue[dict[str, object] | None] = asyncio.Queue()
-    turn_worker = asyncio.create_task(
-        room_turn_worker(
-            turn_queue, websocket, manager, pipeline, collector, room_id, participant_id
-        ),
-        name=f"room-turns-{room_id}-{participant_id}",
-    )
-    turn_worker.add_done_callback(report_background_failure)
+    turn_worker: asyncio.Task[None] | None = None
+    # Server-hosted rooms (Scenario 2) run inference here; device rooms (Scenario 1)
+    # only relay results the phones produce on-device, so no inference worker is needed.
+    if inference_mode == "server":
+        turn_worker = asyncio.create_task(
+            room_turn_worker(
+                turn_queue, websocket, manager, pipeline, collector, room_id, participant_id
+            ),
+            name=f"room-turns-{room_id}-{participant_id}",
+        )
+        turn_worker.add_done_callback(report_background_failure)
     try:
         while True:
             message = await websocket.receive()
             if message["type"] == "websocket.disconnect":
                 break
             if (audio := message.get("bytes")) is not None:
+                if inference_mode == "device":
+                    await websocket.send_json(
+                        error_event(
+                            room_id, "INVALID_EVENT", "server does not accept audio in relay mode"
+                        )
+                    )
+                    continue
                 if active_turn is None:
                     await websocket.send_json(
                         error_event(room_id, "INVALID_EVENT", "binary audio requires audio.start")
@@ -467,8 +485,23 @@ async def room_websocket(
                 await collector.increment_room("room_events_received_total")
                 if event.room_id != room_id or event.participant_id != participant_id:
                     raise ValueError("event identity does not match authenticated participant")
-                if event.type not in {"participant.ready", "audio.start", "audio.end", "ping"}:
+                allowed_events = (
+                    {"participant.ready", "translation.result", "ping"}
+                    if inference_mode == "device"
+                    else {"participant.ready", "audio.start", "audio.end", "ping"}
+                )
+                if event.type not in allowed_events:
                     raise ValueError("unsupported event type")
+                if event.type == "translation.result":
+                    payload = event.payload
+                    if (
+                        payload.get("source_language") not in {"vi", "en"}
+                        or payload.get("target_language") not in {"vi", "en"}
+                        or not isinstance(payload.get("source_text"), str)
+                        or not isinstance(payload.get("translated_text"), str)
+                        or not str(payload.get("source_text")).strip()
+                    ):
+                        raise ValueError("invalid device translation result")
                 if event.type == "audio.start":
                     if active_turn is not None:
                         raise ValueError("an audio turn is already active")
@@ -501,6 +534,37 @@ async def room_websocket(
                     await websocket.send_json(
                         event_envelope("pong", room_id, participant_id, event.sequence)
                     )
+                elif event.type == "translation.result":
+                    payload = event.payload
+                    result_payload: dict[str, object] = {
+                        "speaker_id": participant_id,
+                        "source_language": payload["source_language"],
+                        "target_language": payload["target_language"],
+                        "source_text": payload["source_text"],
+                        "translated_text": payload["translated_text"],
+                        "inference_mode": "device",
+                    }
+                    for key in (
+                        "asr_latency_ms",
+                        "mt_latency_ms",
+                        "end_to_end_latency_ms",
+                        "audio_duration_ms",
+                    ):
+                        value = payload.get(key)
+                        if isinstance(value, int | float):
+                            result_payload[key] = float(value)
+                    await manager.broadcast(
+                        room_id,
+                        event_envelope(
+                            "translation.result",
+                            room_id,
+                            participant_id,
+                            event.sequence,
+                            event_id=event.event_id,
+                            payload=result_payload,
+                        ),
+                    )
+                    await collector.increment_room("room_device_results_total")
                 elif event.type == "audio.start":
                     payload = event.payload
                     active_turn = {
@@ -547,7 +611,8 @@ async def room_websocket(
     except WebSocketDisconnect:
         pass
     finally:
-        turn_queue.put_nowait(None)
+        if turn_worker is not None:
+            turn_queue.put_nowait(None)
         await manager.disconnect(room_id, participant_id, websocket)
         await collector.increment_room("room_websocket_disconnects_total")
         await refresh_room_gauges(manager, collector)

@@ -6,6 +6,11 @@ from pydantic import BaseModel, Field
 
 Language = Literal["vi", "en"]
 
+# Which side runs the AI pipeline for a room.
+#  - "server": this host transcribes/translates; phones are thin clients (Scenario 2).
+#  - "device": phones self-infer on-device and the host only relays results (Scenario 1).
+InferenceMode = Literal["server", "device"]
+
 
 class RoomStatus(StrEnum):
     WAITING = "waiting"
@@ -28,6 +33,8 @@ class CreateRoomRequest(BaseModel):
     display_name: str = Field(min_length=1, max_length=80)
     source_language: Language
     target_language: Language
+    # Only honored on room creation; the room's mode is fixed for its lifetime.
+    inference_mode: InferenceMode = "server"
 
 
 class JoinRoomRequest(CreateRoomRequest):
@@ -38,6 +45,7 @@ class RoomAccessResponse(BaseModel):
     room_id: str
     room_code: str
     status: RoomStatus
+    inference_mode: InferenceMode = "server"
     participant: RoomParticipant
     access_token: str
     expires_at: datetime
@@ -47,6 +55,7 @@ class RoomStateResponse(BaseModel):
     room_id: str
     room_code: str
     status: RoomStatus
+    inference_mode: InferenceMode = "server"
     participant_count: int = Field(ge=0, le=2)
     participants: list[RoomParticipant]
     expires_at: datetime
