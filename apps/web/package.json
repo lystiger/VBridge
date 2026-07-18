@@ -10,13 +10,15 @@
   },
   "dependencies": {
     "@vitejs/plugin-react": "latest",
-    "vite": "latest",
-    "typescript": "latest",
     "react": "latest",
-    "react-dom": "latest"
+    "react-dom": "latest",
+    "typescript": "latest",
+    "vite": "latest",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@eslint/js": "latest",
+    "@tailwindcss/vite": "latest",
     "@types/react": "latest",
     "@types/react-dom": "latest",
     "eslint": "latest",
@@ -24,7 +26,6 @@
     "eslint-plugin-react-refresh": "latest",
     "globals": "latest",
     "tailwindcss": "latest",
-    "@tailwindcss/vite": "latest",
     "typescript-eslint": "latest"
   }
 }

@@ -1,0 +1,1415 @@
+{
+  "components": {
+    "schemas": {
+      "ASRResponse": {
+        "properties": {
+          "processing_ms": {
+            "minimum": 0.0,
+            "title": "Processing Ms",
+            "type": "number"
+          },
+          "session_id": {
+            "title": "Session Id",
+            "type": "string"
+          },
+          "source_language": {
+            "enum": [
+              "vi",
+              "en"
+            ],
+            "title": "Source Language",
+            "type": "string"
+          },
+          "speaker": {
+            "title": "Speaker",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "speaker",
+          "source_language",
+          "text",
+          "processing_ms"
+        ],
+        "title": "ASRResponse",
+        "type": "object"
+      },
+      "AudioRequest": {
+        "properties": {
+          "audio_path": {
+            "minLength": 1,
+            "title": "Audio Path",
+            "type": "string"
+          },
+          "language": {
+            "anyOf": [
+              {
+                "enum": [
+                  "vi",
+                  "en"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Language"
+          },
+          "session_id": {
+            "minLength": 1,
+            "title": "Session Id",
+            "type": "string"
+          },
+          "speaker": {
+            "minLength": 1,
+            "title": "Speaker",
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "speaker",
+          "audio_path"
+        ],
+        "title": "AudioRequest",
+        "type": "object"
+      },
+      "Body_upload_pipeline_pipeline_upload_post": {
+        "properties": {
+          "audio": {
+            "contentMediaType": "application/octet-stream",
+            "title": "Audio",
+            "type": "string"
+          },
+          "language": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Language"
+          },
+          "session_id": {
+            "title": "Session Id",
+            "type": "string"
+          },
+          "speaker": {
+            "default": "speaker_a",
+            "title": "Speaker",
+            "type": "string"
+          }
+        },
+        "required": [
+          "audio",
+          "session_id"
+        ],
+        "title": "Body_upload_pipeline_pipeline_upload_post",
+        "type": "object"
+      },
+      "CreateRoomRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "display_name": {
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Display Name",
+            "type": "string"
+          },
+          "inference_mode": {
+            "default": "server",
+            "enum": [
+              "server",
+              "device"
+            ],
+            "title": "Inference Mode",
+            "type": "string"
+          },
+          "protocol_version": {
+            "const": "1.0.0",
+            "default": "1.0.0",
+            "title": "Protocol Version",
+            "type": "string"
+          },
+          "source_language": {
+            "enum": [
+              "vi",
+              "en"
+            ],
+            "title": "Source Language",
+            "type": "string"
+          },
+          "target_language": {
+            "enum": [
+              "vi",
+              "en"
+            ],
+            "title": "Target Language",
+            "type": "string"
+          }
+        },
+        "required": [
+          "display_name",
+          "source_language",
+          "target_language"
+        ],
+        "title": "CreateRoomRequest",
+        "type": "object"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "HealthResponse": {
+        "properties": {
+          "service": {
+            "title": "Service",
+            "type": "string"
+          },
+          "status": {
+            "const": "ok",
+            "default": "ok",
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "service"
+        ],
+        "title": "HealthResponse",
+        "type": "object"
+      },
+      "JoinRoomRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "display_name": {
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Display Name",
+            "type": "string"
+          },
+          "inference_mode": {
+            "default": "server",
+            "enum": [
+              "server",
+              "device"
+            ],
+            "title": "Inference Mode",
+            "type": "string"
+          },
+          "protocol_version": {
+            "const": "1.0.0",
+            "default": "1.0.0",
+            "title": "Protocol Version",
+            "type": "string"
+          },
+          "room_code": {
+            "maxLength": 6,
+            "minLength": 6,
+            "title": "Room Code",
+            "type": "string"
+          },
+          "source_language": {
+            "enum": [
+              "vi",
+              "en"
+            ],
+            "title": "Source Language",
+            "type": "string"
+          },
+          "target_language": {
+            "enum": [
+              "vi",
+              "en"
+            ],
+            "title": "Target Language",
+            "type": "string"
+          }
+        },
+        "required": [
+          "display_name",
+          "source_language",
+          "target_language",
+          "room_code"
+        ],
+        "title": "JoinRoomRequest",
+        "type": "object"
+      },
+      "MetricsResponse": {
+        "properties": {
+          "asr_mode": {
+            "default": "mock",
+            "title": "Asr Mode",
+            "type": "string"
+          },
+          "asr_model": {
+            "default": "mock",
+            "title": "Asr Model",
+            "type": "string"
+          },
+          "asr_ms": {
+            "minimum": 0.0,
+            "title": "Asr Ms",
+            "type": "number"
+          },
+          "backend": {
+            "default": "cpu",
+            "title": "Backend",
+            "type": "string"
+          },
+          "dispatch_ms": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Dispatch Ms",
+            "type": "number"
+          },
+          "end_to_end_ms": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "End To End Ms",
+            "type": "number"
+          },
+          "mt_mode": {
+            "default": "mock",
+            "title": "Mt Mode",
+            "type": "string"
+          },
+          "mt_model": {
+            "default": "mock",
+            "title": "Mt Model",
+            "type": "string"
+          },
+          "mt_ms": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Mt Ms",
+            "type": "number"
+          },
+          "queue_ms": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Queue Ms",
+            "type": "number"
+          },
+          "recent_utterances": {
+            "default": [],
+            "items": {
+              "additionalProperties": {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "string"
+                  }
+                ]
+              },
+              "type": "object"
+            },
+            "title": "Recent Utterances",
+            "type": "array"
+          },
+          "request_count": {
+            "minimum": 0.0,
+            "title": "Request Count",
+            "type": "integer"
+          },
+          "room_latency_observations": {
+            "default": [],
+            "items": {
+              "additionalProperties": {
+                "type": "number"
+              },
+              "type": "object"
+            },
+            "title": "Room Latency Observations",
+            "type": "array"
+          },
+          "room_metrics": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "number"
+                }
+              ]
+            },
+            "default": {},
+            "title": "Room Metrics",
+            "type": "object"
+          },
+          "successful_requests": {
+            "minimum": 0.0,
+            "title": "Successful Requests",
+            "type": "integer"
+          },
+          "timing_note": {
+            "default": "Tiny-model / CPU timings are not representative of the target card.",
+            "title": "Timing Note",
+            "type": "string"
+          },
+          "total_pipeline_ms": {
+            "minimum": 0.0,
+            "title": "Total Pipeline Ms",
+            "type": "number"
+          },
+          "translation_ms": {
+            "minimum": 0.0,
+            "title": "Translation Ms",
+            "type": "number"
+          },
+          "tts_ms": {
+            "minimum": 0.0,
+            "title": "Tts Ms",
+            "type": "number"
+          }
+        },
+        "required": [
+          "request_count",
+          "successful_requests",
+          "asr_ms",
+          "translation_ms",
+          "tts_ms",
+          "total_pipeline_ms"
+        ],
+        "title": "MetricsResponse",
+        "type": "object"
+      },
+      "ParticipantJoinRequest": {
+        "properties": {
+          "participant_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Participant Id"
+          },
+          "source_language": {
+            "enum": [
+              "vi",
+              "en"
+            ],
+            "title": "Source Language",
+            "type": "string"
+          },
+          "target_language": {
+            "enum": [
+              "vi",
+              "en"
+            ],
+            "title": "Target Language",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source_language",
+          "target_language"
+        ],
+        "title": "ParticipantJoinRequest",
+        "type": "object"
+      },
+      "ParticipantResponse": {
+        "properties": {
+          "connected": {
+            "default": false,
+            "title": "Connected",
+            "type": "boolean"
+          },
+          "participant_id": {
+            "title": "Participant Id",
+            "type": "string"
+          },
+          "session_id": {
+            "title": "Session Id",
+            "type": "string"
+          },
+          "source_language": {
+            "enum": [
+              "vi",
+              "en"
+            ],
+            "title": "Source Language",
+            "type": "string"
+          },
+          "target_language": {
+            "enum": [
+              "vi",
+              "en"
+            ],
+            "title": "Target Language",
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "participant_id",
+          "source_language",
+          "target_language"
+        ],
+        "title": "ParticipantResponse",
+        "type": "object"
+      },
+      "PipelineResponse": {
+        "properties": {
+          "asr_ms": {
+            "minimum": 0.0,
+            "title": "Asr Ms",
+            "type": "number"
+          },
+          "audio_url": {
+            "title": "Audio Url",
+            "type": "string"
+          },
+          "request_id": {
+            "title": "Request Id",
+            "type": "string"
+          },
+          "session_id": {
+            "title": "Session Id",
+            "type": "string"
+          },
+          "source_language": {
+            "enum": [
+              "vi",
+              "en"
+            ],
+            "title": "Source Language",
+            "type": "string"
+          },
+          "status": {
+            "const": "completed",
+            "default": "completed",
+            "title": "Status",
+            "type": "string"
+          },
+          "target_language": {
+            "enum": [
+              "vi",
+              "en"
+            ],
+            "title": "Target Language",
+            "type": "string"
+          },
+          "total_pipeline_ms": {
+            "minimum": 0.0,
+            "title": "Total Pipeline Ms",
+            "type": "number"
+          },
+          "transcript": {
+            "title": "Transcript",
+            "type": "string"
+          },
+          "translation": {
+            "title": "Translation",
+            "type": "string"
+          },
+          "translation_ms": {
+            "minimum": 0.0,
+            "title": "Translation Ms",
+            "type": "number"
+          },
+          "tts_ms": {
+            "minimum": 0.0,
+            "title": "Tts Ms",
+            "type": "number"
+          }
+        },
+        "required": [
+          "request_id",
+          "session_id",
+          "transcript",
+          "translation",
+          "source_language",
+          "target_language",
+          "audio_url",
+          "asr_ms",
+          "translation_ms",
+          "tts_ms",
+          "total_pipeline_ms"
+        ],
+        "title": "PipelineResponse",
+        "type": "object"
+      },
+      "RoomAccessResponse": {
+        "properties": {
+          "access_token": {
+            "title": "Access Token",
+            "type": "string"
+          },
+          "expires_at": {
+            "format": "date-time",
+            "title": "Expires At",
+            "type": "string"
+          },
+          "inference_mode": {
+            "default": "server",
+            "enum": [
+              "server",
+              "device"
+            ],
+            "title": "Inference Mode",
+            "type": "string"
+          },
+          "participant": {
+            "$ref": "#/components/schemas/RoomParticipant"
+          },
+          "protocol_version": {
+            "const": "1.0.0",
+            "default": "1.0.0",
+            "title": "Protocol Version",
+            "type": "string"
+          },
+          "room_code": {
+            "title": "Room Code",
+            "type": "string"
+          },
+          "room_id": {
+            "title": "Room Id",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/RoomStatus"
+          }
+        },
+        "required": [
+          "room_id",
+          "room_code",
+          "status",
+          "participant",
+          "access_token",
+          "expires_at"
+        ],
+        "title": "RoomAccessResponse",
+        "type": "object"
+      },
+      "RoomParticipant": {
+        "properties": {
+          "connected": {
+            "default": false,
+            "title": "Connected",
+            "type": "boolean"
+          },
+          "display_name": {
+            "title": "Display Name",
+            "type": "string"
+          },
+          "is_owner": {
+            "default": false,
+            "title": "Is Owner",
+            "type": "boolean"
+          },
+          "participant_id": {
+            "title": "Participant Id",
+            "type": "string"
+          },
+          "source_language": {
+            "enum": [
+              "vi",
+              "en"
+            ],
+            "title": "Source Language",
+            "type": "string"
+          },
+          "target_language": {
+            "enum": [
+              "vi",
+              "en"
+            ],
+            "title": "Target Language",
+            "type": "string"
+          }
+        },
+        "required": [
+          "participant_id",
+          "display_name",
+          "source_language",
+          "target_language"
+        ],
+        "title": "RoomParticipant",
+        "type": "object"
+      },
+      "RoomStateResponse": {
+        "properties": {
+          "expires_at": {
+            "format": "date-time",
+            "title": "Expires At",
+            "type": "string"
+          },
+          "inference_mode": {
+            "default": "server",
+            "enum": [
+              "server",
+              "device"
+            ],
+            "title": "Inference Mode",
+            "type": "string"
+          },
+          "participant_count": {
+            "maximum": 2.0,
+            "minimum": 0.0,
+            "title": "Participant Count",
+            "type": "integer"
+          },
+          "participants": {
+            "items": {
+              "$ref": "#/components/schemas/RoomParticipant"
+            },
+            "title": "Participants",
+            "type": "array"
+          },
+          "protocol_version": {
+            "const": "1.0.0",
+            "default": "1.0.0",
+            "title": "Protocol Version",
+            "type": "string"
+          },
+          "room_code": {
+            "title": "Room Code",
+            "type": "string"
+          },
+          "room_id": {
+            "title": "Room Id",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/RoomStatus"
+          }
+        },
+        "required": [
+          "room_id",
+          "room_code",
+          "status",
+          "participant_count",
+          "participants",
+          "expires_at"
+        ],
+        "title": "RoomStateResponse",
+        "type": "object"
+      },
+      "RoomStatus": {
+        "enum": [
+          "waiting",
+          "ready",
+          "active",
+          "closed",
+          "expired"
+        ],
+        "title": "RoomStatus",
+        "type": "string"
+      },
+      "SessionCreateResponse": {
+        "properties": {
+          "session_id": {
+            "title": "Session Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "title": "SessionCreateResponse",
+        "type": "object"
+      },
+      "TTSRequest": {
+        "properties": {
+          "language": {
+            "enum": [
+              "vi",
+              "en"
+            ],
+            "title": "Language",
+            "type": "string"
+          },
+          "session_id": {
+            "minLength": 1,
+            "title": "Session Id",
+            "type": "string"
+          },
+          "text": {
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "text",
+          "language"
+        ],
+        "title": "TTSRequest",
+        "type": "object"
+      },
+      "TTSResponse": {
+        "properties": {
+          "audio_format": {
+            "const": "wav",
+            "default": "wav",
+            "title": "Audio Format",
+            "type": "string"
+          },
+          "audio_url": {
+            "title": "Audio Url",
+            "type": "string"
+          },
+          "language": {
+            "enum": [
+              "vi",
+              "en"
+            ],
+            "title": "Language",
+            "type": "string"
+          },
+          "processing_ms": {
+            "minimum": 0.0,
+            "title": "Processing Ms",
+            "type": "number"
+          },
+          "session_id": {
+            "title": "Session Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "language",
+          "audio_url",
+          "processing_ms"
+        ],
+        "title": "TTSResponse",
+        "type": "object"
+      },
+      "TranslationRequest": {
+        "properties": {
+          "session_id": {
+            "minLength": 1,
+            "title": "Session Id",
+            "type": "string"
+          },
+          "source_language": {
+            "enum": [
+              "vi",
+              "en"
+            ],
+            "title": "Source Language",
+            "type": "string"
+          },
+          "target_language": {
+            "anyOf": [
+              {
+                "enum": [
+                  "vi",
+                  "en"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Language"
+          },
+          "text": {
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "text",
+          "source_language"
+        ],
+        "title": "TranslationRequest",
+        "type": "object"
+      },
+      "TranslationResponse": {
+        "properties": {
+          "processing_ms": {
+            "minimum": 0.0,
+            "title": "Processing Ms",
+            "type": "number"
+          },
+          "session_id": {
+            "title": "Session Id",
+            "type": "string"
+          },
+          "source_language": {
+            "enum": [
+              "vi",
+              "en"
+            ],
+            "title": "Source Language",
+            "type": "string"
+          },
+          "source_text": {
+            "title": "Source Text",
+            "type": "string"
+          },
+          "target_language": {
+            "enum": [
+              "vi",
+              "en"
+            ],
+            "title": "Target Language",
+            "type": "string"
+          },
+          "translated_text": {
+            "title": "Translated Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "session_id",
+          "source_language",
+          "target_language",
+          "source_text",
+          "translated_text",
+          "processing_ms"
+        ],
+        "title": "TranslationResponse",
+        "type": "object"
+      },
+      "ValidationError": {
+        "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError",
+        "type": "object"
+      }
+    }
+  },
+  "info": {
+    "title": "VBridge API",
+    "version": "0.1.0",
+    "x-protocol-version": "1.0.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/asr": {
+      "post": {
+        "operationId": "asr_asr_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AudioRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ASRResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Asr"
+      }
+    },
+    "/health": {
+      "get": {
+        "operationId": "health_health_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Health"
+      }
+    },
+    "/metrics": {
+      "get": {
+        "operationId": "metrics_metrics_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MetricsResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Metrics"
+      }
+    },
+    "/pipeline/process": {
+      "post": {
+        "operationId": "process_pipeline_pipeline_process_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AudioRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PipelineResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Process Pipeline"
+      }
+    },
+    "/pipeline/upload": {
+      "post": {
+        "operationId": "upload_pipeline_pipeline_upload_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_pipeline_pipeline_upload_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PipelineResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Upload Pipeline"
+      }
+    },
+    "/rooms": {
+      "post": {
+        "operationId": "create_room_rooms_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateRoomRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoomAccessResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Room"
+      }
+    },
+    "/rooms/join": {
+      "post": {
+        "operationId": "join_room_rooms_join_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JoinRoomRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoomAccessResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Join Room"
+      }
+    },
+    "/rooms/{room_id}": {
+      "delete": {
+        "operationId": "close_room_rooms__room_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "room_id",
+            "required": true,
+            "schema": {
+              "title": "Room Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Close Room"
+      },
+      "get": {
+        "operationId": "get_room_state_rooms__room_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "room_id",
+            "required": true,
+            "schema": {
+              "title": "Room Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoomStateResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Room State"
+      }
+    },
+    "/sessions": {
+      "post": {
+        "operationId": "create_session_sessions_post",
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionCreateResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Create Session"
+      }
+    },
+    "/sessions/{session_id}/participants": {
+      "post": {
+        "operationId": "join_session_sessions__session_id__participants_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "session_id",
+            "required": true,
+            "schema": {
+              "title": "Session Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ParticipantJoinRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ParticipantResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Join Session"
+      }
+    },
+    "/translation": {
+      "post": {
+        "operationId": "translation_translation_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TranslationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TranslationResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Translation"
+      }
+    },
+    "/tts": {
+      "post": {
+        "operationId": "tts_tts_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TTSRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TTSResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Tts"
+      }
+    }
+  }
+}

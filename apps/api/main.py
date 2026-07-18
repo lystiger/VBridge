@@ -20,6 +20,7 @@ from fastapi import (
     WebSocketDisconnect,
 )
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import ValidationError
 
@@ -58,8 +59,10 @@ from services.vad import EnergyVAD, SileroVAD
 from shared.config import get_settings
 from shared.logging import configure_logging, log_event
 from shared.schemas import (
+    PROTOCOL_VERSION,
     ASRResponse,
     AudioRequest,
+    ClientRoomEventAdapter,
     CreateRoomRequest,
     HealthResponse,
     JoinRoomRequest,
@@ -68,7 +71,6 @@ from shared.schemas import (
     ParticipantResponse,
     PipelineResponse,
     RoomAccessResponse,
-    RoomEvent,
     RoomStateResponse,
     SessionCreateResponse,
     TranslationRequest,
@@ -131,6 +133,13 @@ app.add_middleware(
 )
 app.mount("/audio", StaticFiles(directory=settings.audio_output_dir), name="audio")
 
+
+@app.get("/contract/websocket.schema.json", include_in_schema=False)
+async def websocket_contract() -> JSONResponse:
+    """Machine-readable client-to-server WebSocket contract."""
+
+    return JSONResponse(ClientRoomEventAdapter.json_schema())
+
 WS_INVALID_TOKEN = 4001
 WS_ROOM_NOT_FOUND = 4002
 WS_ROOM_CLOSED = 4004
@@ -147,6 +156,7 @@ def event_envelope(
     event_id: str | None = None,
 ) -> dict[str, object]:
     return {
+        "protocol_version": PROTOCOL_VERSION,
         "type": event_type,
         "event_id": event_id or str(uuid4()),
         "room_id": room_id,
@@ -365,15 +375,7 @@ async def close_room(
         raise HTTPException(status_code=403, detail={"code": exc.code}) from exc
     await collector.increment_room("rooms_closed_total")
     await refresh_room_gauges(manager, collector)
-    event = {
-        "type": "room.closed",
-        "event_id": str(uuid4()),
-        "room_id": room_id,
-        "participant_id": "system",
-        "sequence": 0,
-        "timestamp": datetime.now(UTC).isoformat(),
-        "payload": {},
-    }
+    event = event_envelope("room.closed", room_id)
     for websocket in sockets:
         try:
             await websocket.send_json(event)
@@ -481,7 +483,7 @@ async def room_websocket(
                 )
                 continue
             try:
-                event = RoomEvent.model_validate_json(raw_event)
+                event = ClientRoomEventAdapter.validate_json(raw_event)
                 await collector.increment_room("room_events_received_total")
                 if event.room_id != room_id or event.participant_id != participant_id:
                     raise ValueError("event identity does not match authenticated participant")
@@ -492,28 +494,9 @@ async def room_websocket(
                 )
                 if event.type not in allowed_events:
                     raise ValueError("unsupported event type")
-                if event.type == "translation.result":
-                    payload = event.payload
-                    if (
-                        payload.get("source_language") not in {"vi", "en"}
-                        or payload.get("target_language") not in {"vi", "en"}
-                        or not isinstance(payload.get("source_text"), str)
-                        or not isinstance(payload.get("translated_text"), str)
-                        or not str(payload.get("source_text")).strip()
-                    ):
-                        raise ValueError("invalid device translation result")
                 if event.type == "audio.start":
                     if active_turn is not None:
                         raise ValueError("an audio turn is already active")
-                    payload = event.payload
-                    if (
-                        payload.get("audio_format") != "pcm_s16le"
-                        or payload.get("sample_rate_hz") != 16_000
-                        or payload.get("channels") != 1
-                        or payload.get("source_language") not in {"vi", "en"}
-                        or payload.get("target_language") not in {"vi", "en"}
-                    ):
-                        raise ValueError("unsupported audio metadata")
                 if event.type == "audio.end" and active_turn is None:
                     raise ValueError("audio.end requires audio.start")
                 await manager.validate_event(
@@ -535,7 +518,7 @@ async def room_websocket(
                         event_envelope("pong", room_id, participant_id, event.sequence)
                     )
                 elif event.type == "translation.result":
-                    payload = event.payload
+                    payload = event.payload.model_dump(exclude_none=True)
                     result_payload: dict[str, object] = {
                         "speaker_id": participant_id,
                         "source_language": payload["source_language"],
@@ -566,7 +549,7 @@ async def room_websocket(
                     )
                     await collector.increment_room("room_device_results_total")
                 elif event.type == "audio.start":
-                    payload = event.payload
+                    payload = event.payload.model_dump()
                     active_turn = {
                         "event_id": event.event_id,
                         "sequence": event.sequence,

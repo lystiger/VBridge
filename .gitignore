@@ -9,6 +9,7 @@ apps/web/node_modules/
 apps/web/dist/
 apps/web/*.tsbuildinfo
 docs/*
+!docs/VBridge_Phone_Server_Contract.md
 !docs/images/
 docs/images/*
 !docs/images/vbridge-*.png

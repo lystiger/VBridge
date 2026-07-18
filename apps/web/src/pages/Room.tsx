@@ -12,6 +12,7 @@ import {
   type Lang,
   type RoomAccess,
   type RoomEvent,
+  parseRoomEvent,
 } from '../lib/api'
 
 type LogEntry = {
@@ -162,7 +163,7 @@ function LiveRoom({ access, onLeave }: { access: RoomAccess; onLeave: () => void
     socket.onclose = () => setConnected(false)
     socket.onerror = () => setError('WebSocket error')
     socket.onmessage = event => {
-      const msg = JSON.parse(event.data) as RoomEvent
+      const msg = parseRoomEvent(JSON.parse(event.data))
       if (msg.type === 'room.state') {
         const p = msg.payload as { status?: string; participant_count?: number }
         if (p.status) setStatus(p.status as typeof status)

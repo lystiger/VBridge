@@ -1,5 +1,8 @@
+import { z } from 'zod'
+
 export const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000'
 export const WS_URL = API_URL.replace(/^http/, 'ws')
+export const PROTOCOL_VERSION = '1.0.0' as const
 
 export type Lang = 'vi' | 'en'
 
@@ -25,21 +28,27 @@ export const LANG_LABEL: Record<Lang, string> = {
   en: 'English',
 }
 
-export type RoomAccess = {
-  room_id: string
-  room_code: string
-  status: string
-  inference_mode: InferenceMode
-  participant: {
-    participant_id: string
-    display_name: string
-    source_language: Lang
-    target_language: Lang
-    is_owner: boolean
-  }
-  access_token: string
-  expires_at: string
-}
+const langSchema = z.enum(['vi', 'en'])
+const inferenceModeSchema = z.enum(['server', 'device'])
+const roomAccessSchema = z.object({
+  protocol_version: z.literal(PROTOCOL_VERSION),
+  room_id: z.string().min(1),
+  room_code: z.string().length(6),
+  status: z.string(),
+  inference_mode: inferenceModeSchema,
+  participant: z.object({
+    participant_id: z.string().min(1),
+    display_name: z.string(),
+    source_language: langSchema,
+    target_language: langSchema,
+    connected: z.boolean(),
+    is_owner: z.boolean(),
+  }),
+  access_token: z.string().min(1),
+  expires_at: z.string(),
+})
+
+export type RoomAccess = z.infer<typeof roomAccessSchema>
 
 // Create a room, choosing which side runs inference (Scenario 1 vs 2).
 export async function createRoom(
@@ -59,7 +68,7 @@ export async function createRoom(
     }),
   })
   if (!res.ok) throw new Error(`Room creation failed (${res.status})`)
-  return (await res.json()) as RoomAccess
+  return roomAccessSchema.parse(await res.json())
 }
 
 export async function joinRoom(
@@ -82,17 +91,24 @@ export async function joinRoom(
     const detail = await res.json().catch(() => ({}))
     throw new Error(detail?.detail?.code ?? `Join failed (${res.status})`)
   }
-  return (await res.json()) as RoomAccess
+  return roomAccessSchema.parse(await res.json())
 }
 
-export type RoomEvent = {
-  type: string
-  event_id: string
-  room_id: string
-  participant_id: string
-  sequence: number
-  timestamp: string
-  payload: Record<string, unknown>
+const roomEventSchema = z.object({
+  protocol_version: z.literal(PROTOCOL_VERSION),
+  type: z.string().min(1),
+  event_id: z.string().min(1),
+  room_id: z.string().min(1),
+  participant_id: z.string().min(1),
+  sequence: z.number().int().nonnegative(),
+  timestamp: z.string(),
+  payload: z.record(z.string(), z.unknown()),
+})
+
+export type RoomEvent = z.infer<typeof roomEventSchema>
+
+export function parseRoomEvent(value: unknown): RoomEvent {
+  return roomEventSchema.parse(value)
 }
 
 // Build the canonical room event envelope the WebSocket protocol expects.
@@ -104,6 +120,7 @@ export function roomEvent(
   payload: Record<string, unknown> = {},
 ): RoomEvent {
   return {
+    protocol_version: PROTOCOL_VERSION,
     type,
     event_id: crypto.randomUUID(),
     room_id: roomId,

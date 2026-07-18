@@ -1,8 +1,11 @@
 from datetime import datetime
 from enum import StrEnum
-from typing import Any, Literal
+from typing import Annotated, Any, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field, TypeAdapter
+
+PROTOCOL_VERSION = "1.0.0"
+ProtocolVersion = Literal["1.0.0"]
 
 Language = Literal["vi", "en"]
 
@@ -30,6 +33,9 @@ class RoomParticipant(BaseModel):
 
 
 class CreateRoomRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    protocol_version: ProtocolVersion = PROTOCOL_VERSION
     display_name: str = Field(min_length=1, max_length=80)
     source_language: Language
     target_language: Language
@@ -42,6 +48,7 @@ class JoinRoomRequest(CreateRoomRequest):
 
 
 class RoomAccessResponse(BaseModel):
+    protocol_version: ProtocolVersion = PROTOCOL_VERSION
     room_id: str
     room_code: str
     status: RoomStatus
@@ -52,6 +59,7 @@ class RoomAccessResponse(BaseModel):
 
 
 class RoomStateResponse(BaseModel):
+    protocol_version: ProtocolVersion = PROTOCOL_VERSION
     room_id: str
     room_code: str
     status: RoomStatus
@@ -62,6 +70,15 @@ class RoomStateResponse(BaseModel):
 
 
 class RoomEvent(BaseModel):
+    """Common server-event envelope.
+
+    Client events are parsed with ``ClientRoomEventAdapter`` below so their
+    payloads are validated by event type rather than accepted as arbitrary JSON.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    protocol_version: ProtocolVersion = PROTOCOL_VERSION
     type: str = Field(min_length=1, max_length=64)
     event_id: str = Field(min_length=1, max_length=128)
     room_id: str = Field(min_length=1)
@@ -69,6 +86,82 @@ class RoomEvent(BaseModel):
     sequence: int = Field(ge=0)
     timestamp: datetime
     payload: dict[str, Any] = Field(default_factory=dict)
+
+
+class EmptyPayload(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+
+class ParticipantReadyPayload(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    last_received_room_sequence: int = Field(default=0, ge=0)
+
+
+class AudioStartPayload(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    audio_format: Literal["pcm_s16le"]
+    sample_rate_hz: Literal[16000]
+    channels: Literal[1]
+    source_language: Language
+    target_language: Language
+
+
+class DeviceTranslationPayload(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    source_language: Language
+    target_language: Language
+    source_text: str = Field(min_length=1)
+    translated_text: str
+    asr_latency_ms: float | None = Field(default=None, ge=0)
+    mt_latency_ms: float | None = Field(default=None, ge=0)
+    end_to_end_latency_ms: float | None = Field(default=None, ge=0)
+    audio_duration_ms: float | None = Field(default=None, ge=0)
+
+
+class ClientEventBase(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    protocol_version: ProtocolVersion = PROTOCOL_VERSION
+    event_id: str = Field(min_length=1, max_length=128)
+    room_id: str = Field(min_length=1)
+    participant_id: str = Field(min_length=1)
+    sequence: int = Field(ge=0)
+    timestamp: datetime
+
+
+class ParticipantReadyEvent(ClientEventBase):
+    type: Literal["participant.ready"]
+    payload: ParticipantReadyPayload = Field(default_factory=ParticipantReadyPayload)
+
+
+class PingEvent(ClientEventBase):
+    type: Literal["ping"]
+    payload: EmptyPayload = Field(default_factory=EmptyPayload)
+
+
+class AudioStartEvent(ClientEventBase):
+    type: Literal["audio.start"]
+    payload: AudioStartPayload
+
+
+class AudioEndEvent(ClientEventBase):
+    type: Literal["audio.end"]
+    payload: EmptyPayload = Field(default_factory=EmptyPayload)
+
+
+class DeviceTranslationEvent(ClientEventBase):
+    type: Literal["translation.result"]
+    payload: DeviceTranslationPayload
+
+
+ClientRoomEvent = Annotated[
+    ParticipantReadyEvent | PingEvent | AudioStartEvent | AudioEndEvent | DeviceTranslationEvent,
+    Field(discriminator="type"),
+]
+ClientRoomEventAdapter: TypeAdapter[ClientRoomEvent] = TypeAdapter(ClientRoomEvent)
 
 
 class AudioRequest(BaseModel):

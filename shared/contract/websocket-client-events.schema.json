@@ -1,0 +1,462 @@
+{
+  "$defs": {
+    "AudioEndEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "event_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Event Id",
+          "type": "string"
+        },
+        "participant_id": {
+          "minLength": 1,
+          "title": "Participant Id",
+          "type": "string"
+        },
+        "payload": {
+          "$ref": "#/$defs/EmptyPayload"
+        },
+        "protocol_version": {
+          "const": "1.0.0",
+          "default": "1.0.0",
+          "title": "Protocol Version",
+          "type": "string"
+        },
+        "room_id": {
+          "minLength": 1,
+          "title": "Room Id",
+          "type": "string"
+        },
+        "sequence": {
+          "minimum": 0,
+          "title": "Sequence",
+          "type": "integer"
+        },
+        "timestamp": {
+          "format": "date-time",
+          "title": "Timestamp",
+          "type": "string"
+        },
+        "type": {
+          "const": "audio.end",
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "event_id",
+        "room_id",
+        "participant_id",
+        "sequence",
+        "timestamp",
+        "type"
+      ],
+      "title": "AudioEndEvent",
+      "type": "object"
+    },
+    "AudioStartEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "event_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Event Id",
+          "type": "string"
+        },
+        "participant_id": {
+          "minLength": 1,
+          "title": "Participant Id",
+          "type": "string"
+        },
+        "payload": {
+          "$ref": "#/$defs/AudioStartPayload"
+        },
+        "protocol_version": {
+          "const": "1.0.0",
+          "default": "1.0.0",
+          "title": "Protocol Version",
+          "type": "string"
+        },
+        "room_id": {
+          "minLength": 1,
+          "title": "Room Id",
+          "type": "string"
+        },
+        "sequence": {
+          "minimum": 0,
+          "title": "Sequence",
+          "type": "integer"
+        },
+        "timestamp": {
+          "format": "date-time",
+          "title": "Timestamp",
+          "type": "string"
+        },
+        "type": {
+          "const": "audio.start",
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "event_id",
+        "room_id",
+        "participant_id",
+        "sequence",
+        "timestamp",
+        "type",
+        "payload"
+      ],
+      "title": "AudioStartEvent",
+      "type": "object"
+    },
+    "AudioStartPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "audio_format": {
+          "const": "pcm_s16le",
+          "title": "Audio Format",
+          "type": "string"
+        },
+        "channels": {
+          "const": 1,
+          "title": "Channels",
+          "type": "integer"
+        },
+        "sample_rate_hz": {
+          "const": 16000,
+          "title": "Sample Rate Hz",
+          "type": "integer"
+        },
+        "source_language": {
+          "enum": [
+            "vi",
+            "en"
+          ],
+          "title": "Source Language",
+          "type": "string"
+        },
+        "target_language": {
+          "enum": [
+            "vi",
+            "en"
+          ],
+          "title": "Target Language",
+          "type": "string"
+        }
+      },
+      "required": [
+        "audio_format",
+        "sample_rate_hz",
+        "channels",
+        "source_language",
+        "target_language"
+      ],
+      "title": "AudioStartPayload",
+      "type": "object"
+    },
+    "DeviceTranslationEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "event_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Event Id",
+          "type": "string"
+        },
+        "participant_id": {
+          "minLength": 1,
+          "title": "Participant Id",
+          "type": "string"
+        },
+        "payload": {
+          "$ref": "#/$defs/DeviceTranslationPayload"
+        },
+        "protocol_version": {
+          "const": "1.0.0",
+          "default": "1.0.0",
+          "title": "Protocol Version",
+          "type": "string"
+        },
+        "room_id": {
+          "minLength": 1,
+          "title": "Room Id",
+          "type": "string"
+        },
+        "sequence": {
+          "minimum": 0,
+          "title": "Sequence",
+          "type": "integer"
+        },
+        "timestamp": {
+          "format": "date-time",
+          "title": "Timestamp",
+          "type": "string"
+        },
+        "type": {
+          "const": "translation.result",
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "event_id",
+        "room_id",
+        "participant_id",
+        "sequence",
+        "timestamp",
+        "type",
+        "payload"
+      ],
+      "title": "DeviceTranslationEvent",
+      "type": "object"
+    },
+    "DeviceTranslationPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "asr_latency_ms": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Asr Latency Ms"
+        },
+        "audio_duration_ms": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Audio Duration Ms"
+        },
+        "end_to_end_latency_ms": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "End To End Latency Ms"
+        },
+        "mt_latency_ms": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Mt Latency Ms"
+        },
+        "source_language": {
+          "enum": [
+            "vi",
+            "en"
+          ],
+          "title": "Source Language",
+          "type": "string"
+        },
+        "source_text": {
+          "minLength": 1,
+          "title": "Source Text",
+          "type": "string"
+        },
+        "target_language": {
+          "enum": [
+            "vi",
+            "en"
+          ],
+          "title": "Target Language",
+          "type": "string"
+        },
+        "translated_text": {
+          "title": "Translated Text",
+          "type": "string"
+        }
+      },
+      "required": [
+        "source_language",
+        "target_language",
+        "source_text",
+        "translated_text"
+      ],
+      "title": "DeviceTranslationPayload",
+      "type": "object"
+    },
+    "EmptyPayload": {
+      "additionalProperties": false,
+      "properties": {},
+      "title": "EmptyPayload",
+      "type": "object"
+    },
+    "ParticipantReadyEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "event_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Event Id",
+          "type": "string"
+        },
+        "participant_id": {
+          "minLength": 1,
+          "title": "Participant Id",
+          "type": "string"
+        },
+        "payload": {
+          "$ref": "#/$defs/ParticipantReadyPayload"
+        },
+        "protocol_version": {
+          "const": "1.0.0",
+          "default": "1.0.0",
+          "title": "Protocol Version",
+          "type": "string"
+        },
+        "room_id": {
+          "minLength": 1,
+          "title": "Room Id",
+          "type": "string"
+        },
+        "sequence": {
+          "minimum": 0,
+          "title": "Sequence",
+          "type": "integer"
+        },
+        "timestamp": {
+          "format": "date-time",
+          "title": "Timestamp",
+          "type": "string"
+        },
+        "type": {
+          "const": "participant.ready",
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "event_id",
+        "room_id",
+        "participant_id",
+        "sequence",
+        "timestamp",
+        "type"
+      ],
+      "title": "ParticipantReadyEvent",
+      "type": "object"
+    },
+    "ParticipantReadyPayload": {
+      "additionalProperties": false,
+      "properties": {
+        "last_received_room_sequence": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Last Received Room Sequence",
+          "type": "integer"
+        }
+      },
+      "title": "ParticipantReadyPayload",
+      "type": "object"
+    },
+    "PingEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "event_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Event Id",
+          "type": "string"
+        },
+        "participant_id": {
+          "minLength": 1,
+          "title": "Participant Id",
+          "type": "string"
+        },
+        "payload": {
+          "$ref": "#/$defs/EmptyPayload"
+        },
+        "protocol_version": {
+          "const": "1.0.0",
+          "default": "1.0.0",
+          "title": "Protocol Version",
+          "type": "string"
+        },
+        "room_id": {
+          "minLength": 1,
+          "title": "Room Id",
+          "type": "string"
+        },
+        "sequence": {
+          "minimum": 0,
+          "title": "Sequence",
+          "type": "integer"
+        },
+        "timestamp": {
+          "format": "date-time",
+          "title": "Timestamp",
+          "type": "string"
+        },
+        "type": {
+          "const": "ping",
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "event_id",
+        "room_id",
+        "participant_id",
+        "sequence",
+        "timestamp",
+        "type"
+      ],
+      "title": "PingEvent",
+      "type": "object"
+    }
+  },
+  "discriminator": {
+    "mapping": {
+      "audio.end": "#/$defs/AudioEndEvent",
+      "audio.start": "#/$defs/AudioStartEvent",
+      "participant.ready": "#/$defs/ParticipantReadyEvent",
+      "ping": "#/$defs/PingEvent",
+      "translation.result": "#/$defs/DeviceTranslationEvent"
+    },
+    "propertyName": "type"
+  },
+  "oneOf": [
+    {
+      "$ref": "#/$defs/ParticipantReadyEvent"
+    },
+    {
+      "$ref": "#/$defs/PingEvent"
+    },
+    {
+      "$ref": "#/$defs/AudioStartEvent"
+    },
+    {
+      "$ref": "#/$defs/AudioEndEvent"
+    },
+    {
+      "$ref": "#/$defs/DeviceTranslationEvent"
+    }
+  ]
+}
