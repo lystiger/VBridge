@@ -39,10 +39,14 @@ def test_pipeline_and_metrics_endpoints(tmp_path: Path) -> None:
             },
         )
         metrics = client.get("/metrics")
+        prometheus = client.get("/metrics/prometheus")
     assert response.status_code == 200
     assert response.json()["translation"] == "Hello"
     assert response.headers["x-request-id"]
     assert metrics.json()["request_count"] == 1
+    assert prometheus.status_code == 200
+    assert "vbridge_pipeline_requests_total 1" in prometheus.text
+    assert "vbridge_inference_capacity 1" in prometheus.text
 
 
 def test_upload_endpoint(tmp_path: Path) -> None:

@@ -1,6 +1,7 @@
 import { z } from 'zod'
 
-export const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000'
+const configuredApiUrl = import.meta.env.VITE_API_URL
+export const API_URL = configuredApiUrl || window.location.origin
 export const WS_URL = API_URL.replace(/^http/, 'ws')
 export const PROTOCOL_VERSION = '1.0.0' as const
 

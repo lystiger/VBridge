@@ -20,7 +20,7 @@ from fastapi import (
     WebSocketDisconnect,
 )
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import ValidationError
 
@@ -32,7 +32,7 @@ from apps.api.dependencies import (
     get_session_manager,
 )
 from services.metrics import MetricsCollector
-from services.pipeline import PipelineService
+from services.pipeline import PipelineOverloadedError, PipelineService
 from services.room_tokens import ExpiredTokenError, InvalidTokenError, RoomTokenService
 from services.rooms import (
     DuplicateEventError,
@@ -132,6 +132,17 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.mount("/audio", StaticFiles(directory=settings.audio_output_dir), name="audio")
+
+
+@app.exception_handler(PipelineOverloadedError)
+async def pipeline_overloaded_handler(
+    _request: Request, exc: PipelineOverloadedError
+) -> JSONResponse:
+    return JSONResponse(
+        status_code=503,
+        headers={"Retry-After": "2"},
+        content={"detail": {"code": "RATE_LIMITED", "message": str(exc), "retryable": True}},
+    )
 
 
 @app.get("/contract/websocket.schema.json", include_in_schema=False)
@@ -681,6 +692,15 @@ async def process_room_turn(
             turn["source_language"],  # type: ignore[arg-type]
             turn["target_language"],  # type: ignore[arg-type]
         )
+    except PipelineOverloadedError as exc:
+        try:
+            await websocket.send_json(
+                error_event(room_id, "RATE_LIMITED", str(exc), retryable=True)
+            )
+        except RuntimeError:
+            pass
+        await collector.increment_room("inference_rejected_total")
+        return
     except Exception as exc:
         log_event(
             "room.pipeline_failed",
@@ -794,29 +814,59 @@ async def health() -> HealthResponse:
 @app.get("/metrics", response_model=MetricsResponse)
 async def metrics(
     collector: Annotated[MetricsCollector, Depends(get_metrics_collector)],
+    pipeline: Annotated[PipelineService, Depends(get_pipeline_service)],
 ) -> MetricsResponse:
-    return collector.snapshot()
+    snapshot = collector.snapshot()
+    snapshot.room_metrics.update(pipeline.admission_snapshot())
+    return snapshot
+
+
+@app.get("/metrics/prometheus", response_class=PlainTextResponse)
+async def prometheus_metrics(
+    collector: Annotated[MetricsCollector, Depends(get_metrics_collector)],
+    pipeline: Annotated[PipelineService, Depends(get_pipeline_service)],
+) -> str:
+    snapshot = collector.snapshot()
+    values: dict[str, int | float] = {
+        "pipeline_requests_total": snapshot.request_count,
+        "pipeline_latency_ms": snapshot.total_pipeline_ms,
+        **snapshot.room_metrics,
+        **pipeline.admission_snapshot(),
+    }
+    lines = [
+        "# VBridge operational metrics. Counters end in _total; other values are gauges.",
+    ]
+    for name, value in sorted(values.items()):
+        safe_name = "vbridge_" + "".join(
+            character if character.isalnum() or character == "_" else "_"
+            for character in name
+        )
+        lines.append(f"{safe_name} {value}")
+    return "\n".join(lines) + "\n"
 
 
 @app.post("/asr", response_model=ASRResponse)
 async def asr(
     request: AudioRequest, pipeline: Annotated[PipelineService, Depends(get_pipeline_service)]
 ) -> ASRResponse:
-    return await pipeline.asr.transcribe(request)
+    async with pipeline.admission():
+        return await pipeline.asr.transcribe(request)
 
 
 @app.post("/translation", response_model=TranslationResponse)
 async def translation(
     request: TranslationRequest, pipeline: Annotated[PipelineService, Depends(get_pipeline_service)]
 ) -> TranslationResponse:
-    return await pipeline.translation.translate(request)
+    async with pipeline.admission():
+        return await pipeline.translation.translate(request)
 
 
 @app.post("/tts", response_model=TTSResponse)
 async def tts(
     request: TTSRequest, pipeline: Annotated[PipelineService, Depends(get_pipeline_service)]
 ) -> TTSResponse:
-    return await pipeline.tts.synthesize(request)
+    async with pipeline.admission():
+        return await pipeline.tts.synthesize(request)
 
 
 @app.post("/pipeline/process", response_model=PipelineResponse)

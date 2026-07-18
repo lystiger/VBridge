@@ -18,6 +18,8 @@ services:
       # Room state is process-local; this must remain one until shared storage is added.
       VBRIDGE_API_WORKERS: 1
       VBRIDGE_VAD_MODE: ${VBRIDGE_VAD_MODE:-silero}
+      VBRIDGE_INFERENCE_MAX_CONCURRENCY: ${VBRIDGE_INFERENCE_MAX_CONCURRENCY:-1}
+      VBRIDGE_INFERENCE_QUEUE_TIMEOUT_SECONDS: ${VBRIDGE_INFERENCE_QUEUE_TIMEOUT_SECONDS:-2}
       HF_HOME: /data/hf
     ports: ["8000:8000"]
     volumes:
@@ -34,7 +36,8 @@ services:
       context: .
       dockerfile: docker/web.Dockerfile
       args:
-        VITE_API_URL: ${VITE_API_URL:-http://localhost:8000}
+        # Empty means same-origin: the web container proxies API and WebSocket traffic.
+        VITE_API_URL: ${VITE_API_URL:-}
     ports: ["5173:80"]
     depends_on:
       api: { condition: service_healthy }

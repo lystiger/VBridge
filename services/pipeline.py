@@ -1,3 +1,6 @@
+import asyncio
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from time import perf_counter
 from uuid import uuid4
 
@@ -8,13 +11,71 @@ from shared.logging import log_event
 from shared.schemas import AudioRequest, Language, PipelineResponse, TranslationRequest, TTSRequest
 
 
+class PipelineOverloadedError(RuntimeError):
+    """Raised when inference capacity cannot be acquired within the queue budget."""
+
+
 class PipelineService:
-    def __init__(self, asr: ASRService, translation: TranslationService, tts: TTSService) -> None:
+    def __init__(
+        self,
+        asr: ASRService,
+        translation: TranslationService,
+        tts: TTSService,
+        max_concurrency: int = 1,
+        queue_timeout_seconds: float = 2.0,
+    ) -> None:
         self.asr = asr
         self.translation = translation
         self.tts = tts
+        self.max_concurrency = max_concurrency
+        self.queue_timeout_seconds = queue_timeout_seconds
+        self._slots = asyncio.Semaphore(max_concurrency)
+        self._active = 0
+        self._waiting = 0
+        self._rejected = 0
+
+    def admission_snapshot(self) -> dict[str, int]:
+        return {
+            "inference_active": self._active,
+            "inference_waiting": self._waiting,
+            "inference_capacity": self.max_concurrency,
+            "inference_rejected_total": self._rejected,
+        }
+
+    @asynccontextmanager
+    async def admission(self) -> AsyncIterator[None]:
+        """Acquire one global model-execution slot or reject after the queue budget."""
+
+        self._waiting += 1
+        try:
+            try:
+                await asyncio.wait_for(
+                    self._slots.acquire(), timeout=self.queue_timeout_seconds
+                )
+            except TimeoutError as exc:
+                self._rejected += 1
+                raise PipelineOverloadedError(
+                    "inference capacity is temporarily exhausted"
+                ) from exc
+        finally:
+            self._waiting -= 1
+        self._active += 1
+        try:
+            yield
+        finally:
+            self._active -= 1
+            self._slots.release()
 
     async def process(
+        self,
+        request: AudioRequest,
+        request_id: str | None = None,
+        target_language: Language | None = None,
+    ) -> PipelineResponse:
+        async with self.admission():
+            return await self._process(request, request_id, target_language)
+
+    async def _process(
         self,
         request: AudioRequest,
         request_id: str | None = None,

@@ -141,8 +141,7 @@ export default function Research() {
   return (
     <section className="max-w-6xl mx-auto pt-12 pb-24 px-6 relative z-10">
       <div className="mb-8">
-        <div className="flex items-center gap-2 text-[10px] font-mono tracking-widest text-cyan-400 uppercase">
-          <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping" />
+        <div className="text-[10px] font-mono tracking-widest text-cyan-400 uppercase">
           VBridge Research Console
         </div>
         <h1 className="text-3xl font-black text-white tracking-tight mt-1">Pipeline Playground</h1>
@@ -184,10 +183,9 @@ export default function Research() {
               <button
                 onClick={() => setSource(target)}
                 disabled={busy}
-                title="Swap direction"
-                className="shrink-0 w-9 h-9 rounded-lg bg-zinc-800 border border-zinc-700 text-cyan-400 hover:bg-zinc-700 active:scale-95 transition-all disabled:opacity-30"
+                className="shrink-0 h-9 rounded-lg bg-zinc-800 border border-zinc-700 px-3 text-[10px] font-bold uppercase tracking-wider text-cyan-400 hover:bg-zinc-700 active:scale-95 transition-all disabled:opacity-30"
               >
-                ⇄
+                Swap
               </button>
               <div className="flex-1 text-center py-2.5 rounded-lg bg-zinc-950 border border-zinc-800 text-sm font-bold text-cyan-300">
                 {LANG_LABEL[target]}
@@ -197,12 +195,7 @@ export default function Research() {
           </Panel>
 
           <Panel title="Host">
-            <div className="flex items-center gap-2 text-xs">
-              <span
-                className={`w-2 h-2 rounded-full ${
-                  online === null ? 'bg-zinc-600' : online ? 'bg-emerald-400' : 'bg-rose-500'
-                }`}
-              />
+            <div className="text-xs">
               <span className="text-zinc-400 font-medium">
                 {online === null ? 'Checking…' : online ? 'Connected' : 'Offline'}
               </span>
@@ -234,17 +227,9 @@ export default function Research() {
                 {stage}
               </span>
             </div>
-            {stage === 'Listening' ? (
-              <div className="flex items-center gap-0.5 h-4 px-2">
-                <div className="w-0.5 bg-cyan-400 rounded-full wv-1 h-full" />
-                <div className="w-0.5 bg-cyan-400 rounded-full wv-2 h-full" />
-                <div className="w-0.5 bg-cyan-400 rounded-full wv-3 h-full" />
-                <div className="w-0.5 bg-cyan-400 rounded-full wv-4 h-full" />
-                <div className="w-0.5 bg-cyan-400 rounded-full wv-5 h-full" />
-              </div>
-            ) : (
-              <span className="text-[10px] text-zinc-600 font-mono">SYS_READY</span>
-            )}
+            <span className="text-[10px] text-zinc-600 font-mono">
+              {stage === 'Listening' ? 'CAPTURING_AUDIO' : 'SYS_READY'}
+            </span>
           </div>
 
           {serverMode ? (
@@ -254,28 +239,28 @@ export default function Research() {
                 disabled={busy}
                 onClick={() => void startRecording()}
               >
-                🎤 Record Turn
+                Record Turn
               </button>
               <button
                 className="py-3 px-4 rounded-xl font-bold text-xs bg-zinc-800 text-rose-400 border border-zinc-700/60 hover:bg-zinc-700 transition-all disabled:opacity-20 disabled:cursor-not-allowed active:scale-95"
                 disabled={stage !== 'Listening'}
                 onClick={stopRecording}
               >
-                ⏹️ Stop
+                Stop
               </button>
               <button
                 className="py-3 px-4 rounded-xl font-bold text-xs bg-gradient-to-r from-emerald-500 to-teal-500 text-zinc-950 hover:opacity-90 transition-all disabled:opacity-20 disabled:cursor-not-allowed active:scale-95 shadow-lg shadow-emerald-500/10"
                 disabled={busy}
                 onClick={() => void startLive()}
               >
-                📡 Auto Listen
+                Auto Listen
               </button>
               <button
                 className="py-3 px-4 rounded-xl font-bold text-xs bg-zinc-800 text-zinc-400 border border-zinc-700/60 hover:bg-zinc-700 transition-all disabled:opacity-20 disabled:cursor-not-allowed active:scale-95"
                 disabled={stage !== 'Listening'}
                 onClick={stopLive}
               >
-                ❌ End Live
+                End Live
               </button>
             </div>
           ) : (
@@ -288,8 +273,8 @@ export default function Research() {
           )}
 
           {error && (
-            <div role="alert" className="mb-6 rounded-xl bg-rose-500/10 border border-rose-500/20 p-4 text-xs text-rose-300 flex items-center gap-2">
-              <span>⚠️</span> {error}
+            <div role="alert" className="mb-6 rounded-xl bg-rose-500/10 border border-rose-500/20 p-4 text-xs text-rose-300">
+              {error}
             </div>
           )}
 

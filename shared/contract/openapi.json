@@ -1015,6 +1015,24 @@
         "summary": "Metrics"
       }
     },
+    "/metrics/prometheus": {
+      "get": {
+        "operationId": "prometheus_metrics_metrics_prometheus_get",
+        "responses": {
+          "200": {
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Prometheus Metrics"
+      }
+    },
     "/pipeline/process": {
       "post": {
         "operationId": "process_pipeline_pipeline_process_post",

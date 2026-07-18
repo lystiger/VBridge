@@ -3,23 +3,22 @@
 
 type Member = { name: string; role: string; focus: string; accent: string }
 
-// NOTE: fill in real names/handles per teammate. Roles are fixed by the brief.
 const TEAM: Member[] = [
   {
-    name: 'AI Engineer',
-    role: 'Models & Translation Quality',
-    focus: 'ASR/MT model selection, translation quality, turn-taking.',
+    name: 'Nguyen Duc Anh',
+    role: 'AI Engineer',
+    focus: 'VAD/ASR/MT/TTS model selection, translation quality, turn-taking.',
     accent: 'from-cyan-400 to-teal-300',
   },
   {
-    name: 'MLOps Engineer',
-    role: 'Serving, Latency & Demo',
-    focus: 'Serving, latency budget, infra, the host server, UX.',
+    name: 'Do Hung Anh',
+    role: 'MLOps Engineer',
+    focus: 'Compare trade-offs, latency budget, infra, the host server, UX.',
     accent: 'from-teal-300 to-indigo-400',
   },
   {
-    name: 'Data Engineer',
-    role: 'Glossary, Eval & Pitch',
+    name: 'Nguyen Ngoc My',
+    role: 'Data Engineer',
     focus: 'Glossary, test dialogues, evaluation harness, pitch.',
     accent: 'from-indigo-400 to-fuchsia-400',
   },

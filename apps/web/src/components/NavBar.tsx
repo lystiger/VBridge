@@ -8,15 +8,14 @@ const LINKS: { route: Route; label: string }[] = [
 
 export default function NavBar({ route }: { route: Route }) {
   return (
-    <header className="sticky top-0 z-50 backdrop-blur-xl bg-[#030712]/70 border-b border-zinc-800/40 px-6 py-4">
+    <header className="sticky top-0 z-50 backdrop-blur-xl bg-[#030712]/70 border-b border-zinc-800/40 px-6 py-2">
       <div className="max-w-7xl mx-auto flex items-center justify-between">
-        <a href="#/dashboard" className="flex items-center gap-2.5 group">
-          <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-cyan-500 to-indigo-500 flex items-center justify-center shadow-lg shadow-cyan-500/20">
-            <span className="text-white font-black text-xs">V</span>
-          </div>
-          <span className="text-xl font-black tracking-wider bg-gradient-to-r from-cyan-400 via-teal-300 to-indigo-400 bg-clip-text text-transparent">
-            VBRIDGE
-          </span>
+        <a href="#/dashboard" aria-label="VBridge home" className="shrink-0">
+          <img
+            src="/vbridge-logo.png"
+            alt="VBridge — Speak freely, understand deeply"
+            className="h-14 w-auto max-w-[180px] object-contain object-left"
+          />
         </a>
         <nav className="flex items-center gap-1 text-xs font-semibold uppercase tracking-widest">
           {LINKS.map(link => (

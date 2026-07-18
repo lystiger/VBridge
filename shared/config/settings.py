@@ -38,6 +38,8 @@ class Settings(BaseSettings):
     room_max_turn_seconds: int = 30
     room_max_json_bytes: int = 16 * 1024
     room_max_queued_turns: int = 4
+    inference_max_concurrency: int = Field(default=1, ge=1, le=32)
+    inference_queue_timeout_seconds: float = Field(default=2.0, ge=0.05, le=60)
 
     @model_validator(mode="after")
     def validate_room_deployment(self) -> "Settings":

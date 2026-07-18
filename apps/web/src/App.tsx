@@ -28,15 +28,6 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#030712] text-zinc-100 font-sans relative overflow-x-hidden selection:bg-cyan-500/30">
-      <style>{`
-        @keyframes wave-bounce { 0%, 100% { transform: scaleY(0.3); } 50% { transform: scaleY(1); } }
-        .wv-1 { animation: wave-bounce 0.6s ease-in-out infinite; }
-        .wv-2 { animation: wave-bounce 0.4s ease-in-out infinite 0.1s; }
-        .wv-3 { animation: wave-bounce 0.8s ease-in-out infinite 0.2s; }
-        .wv-4 { animation: wave-bounce 0.5s ease-in-out infinite 0.3s; }
-        .wv-5 { animation: wave-bounce 0.7s ease-in-out infinite 0.4s; }
-      `}</style>
-
       <Backdrop />
       <NavBar route={route} />
       {route === 'research' ? <Research /> : route === 'room' ? <Room /> : <Dashboard />}

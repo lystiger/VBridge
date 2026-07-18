@@ -293,6 +293,7 @@ VITE_API_URL=http://192.168.1.10:8000 docker compose up --build
 |---|---|---|
 | `GET` | `/health` | Service health |
 | `GET` | `/metrics` | Average stage and total latency |
+| `GET` | `/metrics/prometheus` | Prometheus-compatible load and inference metrics |
 | `POST` | `/asr` | Speech recognition |
 | `POST` | `/translation` | Vietnamese ↔ English translation |
 | `POST` | `/tts` | Speech synthesis |

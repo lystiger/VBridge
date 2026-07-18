@@ -29,7 +29,13 @@ def get_pipeline_service() -> PipelineService:
         if settings.mt_mode == "real"
         else MockTranslationService(settings.glossary_path)
     )
-    return PipelineService(asr, translation, MockTTSService(settings.audio_output_dir))
+    return PipelineService(
+        asr,
+        translation,
+        MockTTSService(settings.audio_output_dir),
+        settings.inference_max_concurrency,
+        settings.inference_queue_timeout_seconds,
+    )
 
 
 @lru_cache
