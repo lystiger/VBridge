@@ -1,4 +1,5 @@
 import wave
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Annotated
 from uuid import uuid4
@@ -8,6 +9,7 @@ from fastapi import (
     FastAPI,
     File,
     Form,
+    Header,
     HTTPException,
     Request,
     UploadFile,
@@ -21,12 +23,24 @@ from pydantic import ValidationError
 from apps.api.dependencies import (
     get_metrics_collector,
     get_pipeline_service,
+    get_room_manager,
+    get_room_token_service,
     get_session_manager,
 )
 from services.metrics import MetricsCollector
 from services.pipeline import PipelineService
+from services.room_tokens import ExpiredTokenError, InvalidTokenError, RoomTokenService
+from services.rooms import (
+    InMemoryRoomManager,
+    InvalidRoomCodeError,
+    Participant,
+    Room,
+    RoomFullError,
+    RoomNotFoundError,
+    RoomUnavailableError,
+)
 from services.sessions import (
-    ParticipantNotFoundError,
+    ParticipantNotFoundError as SessionParticipantNotFoundError,
     SessionManager,
     SessionNotFoundError,
 )
@@ -37,11 +51,15 @@ from shared.logging import configure_logging
 from shared.schemas import (
     ASRResponse,
     AudioRequest,
+    CreateRoomRequest,
     HealthResponse,
+    JoinRoomRequest,
     MetricsResponse,
     ParticipantJoinRequest,
     ParticipantResponse,
     PipelineResponse,
+    RoomAccessResponse,
+    RoomStateResponse,
     SessionCreateResponse,
     TranslationRequest,
     TranslationResponse,
@@ -100,7 +118,7 @@ async def session_websocket(
     await websocket.accept()
     try:
         participant = await manager.connect(session_id, participant_id, websocket)
-    except (SessionNotFoundError, ParticipantNotFoundError):
+    except (SessionNotFoundError, SessionParticipantNotFoundError):
         await websocket.send_json({"type": "error", "code": "not_found"})
         await websocket.close(code=4404)
         return
@@ -134,6 +152,119 @@ async def session_websocket(
         pass
     finally:
         await manager.disconnect(session_id, participant.participant_id, websocket)
+
+
+def room_access_response(
+    manager: InMemoryRoomManager,
+    token_service: RoomTokenService,
+    room: Room,
+    participant: Participant,
+) -> RoomAccessResponse:
+    return RoomAccessResponse(
+        room_id=room.room_id,
+        room_code=room.room_code,
+        status=room.status,
+        participant=manager.participant_schema(participant),
+        access_token=token_service.issue(room.room_id, participant.participant_id),
+        expires_at=room.expires_at,
+    )
+
+
+def verify_bearer(
+    authorization: str | None, token_service: RoomTokenService, room_id: str
+) -> dict[str, str | int]:
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail={"code": "INVALID_TOKEN"})
+    try:
+        claims = token_service.verify(authorization.removeprefix("Bearer "))
+    except ExpiredTokenError as exc:
+        raise HTTPException(status_code=401, detail={"code": "TOKEN_EXPIRED"}) from exc
+    except InvalidTokenError as exc:
+        raise HTTPException(status_code=401, detail={"code": "INVALID_TOKEN"}) from exc
+    if claims["room_id"] != room_id:
+        raise HTTPException(status_code=401, detail={"code": "INVALID_TOKEN"})
+    return claims
+
+
+@app.post("/rooms", response_model=RoomAccessResponse, status_code=201)
+async def create_room(
+    request: CreateRoomRequest,
+    manager: Annotated[InMemoryRoomManager, Depends(get_room_manager)],
+    token_service: Annotated[RoomTokenService, Depends(get_room_token_service)],
+) -> RoomAccessResponse:
+    room, participant = await manager.create_room(
+        request.display_name, request.source_language, request.target_language
+    )
+    return room_access_response(manager, token_service, room, participant)
+
+
+@app.post("/rooms/join", response_model=RoomAccessResponse)
+async def join_room(
+    request: JoinRoomRequest,
+    manager: Annotated[InMemoryRoomManager, Depends(get_room_manager)],
+    token_service: Annotated[RoomTokenService, Depends(get_room_token_service)],
+) -> RoomAccessResponse:
+    try:
+        room, participant = await manager.join_room(
+            request.room_code,
+            request.display_name,
+            request.source_language,
+            request.target_language,
+        )
+    except InvalidRoomCodeError as exc:
+        raise HTTPException(status_code=404, detail={"code": exc.code}) from exc
+    except RoomFullError as exc:
+        raise HTTPException(status_code=409, detail={"code": exc.code}) from exc
+    except RoomUnavailableError as exc:
+        status_code = 410 if exc.code == "ROOM_EXPIRED" else 409
+        raise HTTPException(status_code=status_code, detail={"code": exc.code}) from exc
+    return room_access_response(manager, token_service, room, participant)
+
+
+@app.get("/rooms/{room_id}", response_model=RoomStateResponse)
+async def get_room_state(
+    room_id: str,
+    manager: Annotated[InMemoryRoomManager, Depends(get_room_manager)],
+    token_service: Annotated[RoomTokenService, Depends(get_room_token_service)],
+    authorization: Annotated[str | None, Header()] = None,
+) -> RoomStateResponse:
+    claims = verify_bearer(authorization, token_service, room_id)
+    try:
+        room = await manager.get_room(room_id)
+    except RoomNotFoundError as exc:
+        raise HTTPException(status_code=404, detail={"code": exc.code}) from exc
+    if claims["participant_id"] not in room.participants:
+        raise HTTPException(status_code=401, detail={"code": "INVALID_TOKEN"})
+    return manager.state(room)
+
+
+@app.delete("/rooms/{room_id}", status_code=204)
+async def close_room(
+    room_id: str,
+    manager: Annotated[InMemoryRoomManager, Depends(get_room_manager)],
+    token_service: Annotated[RoomTokenService, Depends(get_room_token_service)],
+    authorization: Annotated[str | None, Header()] = None,
+) -> None:
+    claims = verify_bearer(authorization, token_service, room_id)
+    room = await manager.get_room(room_id)
+    if claims["participant_id"] not in room.participants:
+        raise HTTPException(status_code=401, detail={"code": "INVALID_TOKEN"})
+    sockets = await manager.close_room(room_id)
+    event = {
+        "type": "room.closed",
+        "event_id": str(uuid4()),
+        "room_id": room_id,
+        "participant_id": "system",
+        "sequence": 0,
+        "timestamp": datetime.now(UTC).isoformat(),
+        "payload": {},
+    }
+    for websocket in sockets:
+        try:
+            await websocket.send_json(event)
+            await websocket.close(code=4004, reason="room closed")
+        except RuntimeError:
+            pass
 
 
 def wav_duration_ms(path: str) -> float | None:

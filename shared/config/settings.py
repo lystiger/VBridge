@@ -25,6 +25,13 @@ class Settings(BaseSettings):
     vad_threshold: float = 0.3
     vad_min_silence_ms: int = 500
     partial_interval_chunks: int = 12
+    room_token_secret: str = "vbridge-local-room-secret-change-me"
+    room_ttl_minutes: int = 30
+    room_cleanup_interval_seconds: int = 60
+    room_reconnect_grace_seconds: int = 60
+    room_max_audio_bytes: int = 10 * 1024 * 1024
+    room_max_turn_seconds: int = 30
+    room_max_json_bytes: int = 16 * 1024
 
     @property
     def cors_origin_list(self) -> list[str]:
