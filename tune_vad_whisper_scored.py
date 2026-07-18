@@ -148,8 +148,10 @@ def main():
     print(f"Tìm thấy {len(audio_files)} file audio\n")
 
     rows = []
-    no_ref_results = []  # file không có đáp án chuẩn (vd file test khoảng lặng) - vẫn chạy, chỉ không tính %
-
+    rows = []
+    # file không có đáp án chuẩn (vd file test khoảng lặng)
+    # - vẫn chạy, chỉ không tính %
+    no_ref_results = []
     for audio_path in audio_files:
         file_id = extract_id(audio_path.stem)
         has_ref = file_id in references
