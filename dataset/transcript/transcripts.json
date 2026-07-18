@@ -1,0 +1,72 @@
+{
+  "doan01_clean.wav": {
+    "direction": "vi2en",
+    "domain": "Giới thiệu Doanh nghiệp",
+    "src": "Xin chào, tôi là Minh, đại diện cho công ty TechViet Solutions. Chúng tôi chuyên cung cấp giải pháp phần mềm cho ngành logistics. Công ty được thành lập năm 2018, hiện có hơn 120 nhân viên. Doanh thu năm ngoái của chúng tôi đạt khoảng 50 tỷ đồng. Chúng tôi đang tìm kiếm đối tác chiến lược ở khu vực Đông Nam Á. Rất mong được hợp tác lâu dài với quý công ty.",
+    "ref": "Hello, I'm Minh, representing TechViet Solutions. We specialize in providing software solutions for the logistics industry. The company was founded in 2018 and currently has more than 120 employees. Our revenue last year reached approximately 50 billion VND. We are looking for strategic partners in the Southeast Asia region. We look forward to a long-term partnership with your company.",
+    "glossary": {"TechViet Solutions": "TechViet Solutions", "2018": "2018", "120 nhân viên": "120 employees", "50 tỷ đồng": "50 billion VND"}
+  },
+  "doan02_clean.wav": {
+    "direction": "en2vi",
+    "domain": "Giới thiệu Doanh nghiệp",
+    "src": "Good morning, my name is... ah, Sarah, I represent Aurora Tech Singapore. We provide AI-powered supply chain platforms for enterprise clients. We currently serve over 40 clients across 6 countries in the region. Last quarter, our platform processed, you know, more than 2 million transactions. We're excited about the possibility of expanding into the Vietnamese market. Thank you for taking the time to meet with us today.",
+    "ref": "Chào buổi sáng, tôi tên là Sarah, tôi đại diện cho Aurora Tech Singapore. Chúng tôi cung cấp nền tảng chuỗi cung ứng ứng dụng AI cho khách hàng doanh nghiệp. Hiện tại chúng tôi phục vụ hơn 40 khách hàng tại 6 quốc gia trong khu vực. Quý trước, nền tảng của chúng tôi đã xử lý hơn 2 triệu giao dịch. Chúng tôi rất hào hứng với khả năng mở rộng vào thị trường Việt Nam. Cảm ơn quý vị đã dành thời gian gặp gỡ chúng tôi hôm nay.",
+    "glossary": {"Aurora Tech Singapore": "Aurora Tech Singapore", "40 khách hàng": "40 clients", "6 quốc gia": "6 countries", "2 triệu giao dịch": "2 million transactions"}
+  },
+  "doan03_clean.wav": {
+    "direction": "vi2en",
+    "domain": "Đàm phán Tài chính",
+    "src": "Chúng tôi đã review báo giá của quý công ty, mức giá hơi cao so với budget ban đầu. Ngân sách của chúng tôi cho project này là khoảng 200 nghìn đô la Mỹ. Nếu ký hợp đồng 2 năm, quý vị có thể offer giảm giá 10% được không? Chúng tôi cũng cần thời gian bảo hành tối thiểu 18 tháng. Vậy chúng ta có thể chốt lại các action items vào cuộc họp tuần sau không?",
+    "ref": "We have reviewed your quotation, and the price is a bit high compared to our initial budget. Our budget for this project is approximately 200 thousand US dollars. If we sign a 2-year contract, could you offer a 10% discount? We also need a minimum warranty period of 18 months. So can we finalize the action items at next week's meeting?",
+    "glossary": {"reviewed": "review", "budget": "budget", "project": "project", "200 thousand US dollars": "200 nghìn đô la Mỹ", "2-year": "2 năm", "10%": "10%", "18 months": "18 tháng", "action items": "action items"}
+  },
+  "doan04_clean.wav": {
+    "direction": "en2vi",
+    "domain": "Đàm phán Tài chính",
+    "src": "We would like to discuss the pricing for the next quarter. Our current offer is... let me check... 15% lower than the market average. However, we can only guarantee this rate for orders above... sorry, above 500 units. Can we schedule a follow-up meeting next Monday at 9 AM? I'll send the revised proposal by email this afternoon.",
+    "ref": "Chúng tôi muốn thảo luận về giá cho quý tới. Đề nghị hiện tại của chúng tôi thấp hơn 15% so với mức trung bình thị trường. Tuy nhiên, chúng tôi chỉ có thể đảm bảo mức giá này cho đơn hàng trên 500 đơn vị. Chúng ta có thể sắp xếp một cuộc họp tiếp theo vào thứ Hai tuần sau lúc 9 giờ sáng không? Tôi sẽ gửi bản đề xuất đã chỉnh sửa qua email vào chiều nay.",
+    "glossary": {"15%": "15%", "500 đơn vị": "500 units", "9 giờ sáng": "9 AM", "bản đề xuất đã chỉnh sửa": "revised proposal"}
+  },
+  "doan05_clean.wav": {
+    "direction": "vi2en",
+    "domain": "Pháp lý & Hợp đồng",
+    "src": "Payment terms trong hợp đồng đang ghi là 30% trước, 70% sau khi nghiệm thu. Chúng tôi muốn điều chỉnh thành 3 đợt thanh toán thay vì 2 đợt. Về điều khoản phạt vi phạm, mức phạt hiện tại là 0.5% mỗi ngày trễ hạn. Thời hạn hợp đồng là 12 tháng, có thể gia hạn thêm 6 tháng. Team legal của chúng tôi sẽ xem lại bản dự thảo trước khi ký chính thức.",
+    "ref": "The payment terms in the contract state 30% upfront and 70% upon acceptance. We would like to adjust this to 3 payment installments instead of 2. Regarding the penalty clause, the current penalty is 0.5% per day of delay. The contract term is 12 months, with a possible 6-month extension. Our legal team will review the draft before the official signing.",
+    "glossary": {"payment terms": "Payment terms", "30%": "30%", "70%": "70%", "0.5%": "0.5%", "12 months": "12 tháng", "6-month": "6 tháng", "legal team": "Team legal"}
+  },
+  "doan06_clean.wav": {
+    "direction": "en2vi",
+    "domain": "Pháp lý & Hợp đồng",
+    "src": "Let's go over the confidentiality clause in section 4 of the contract. This clause remains valid for 5 years after the contract ends. We propose adding an arbitration clause in case of any disputes. Both parties must give written notice at least 60 days before termination. I believe this covers all the key terms for now.",
+    "ref": "Hãy cùng xem lại điều khoản bảo mật ở mục 4 của hợp đồng. Điều khoản này vẫn có hiệu lực trong 5 năm sau khi hợp đồng kết thúc. Chúng tôi đề xuất thêm điều khoản trọng tài trong trường hợp có tranh chấp. Cả hai bên phải thông báo bằng văn bản ít nhất 60 ngày trước khi chấm dứt hợp đồng. Tôi nghĩ điều này đã bao quát các điều khoản chính cho hiện tại.",
+    "glossary": {"điều khoản bảo mật": "confidentiality clause", "5 năm": "5 years", "điều khoản trọng tài": "arbitration clause", "60 ngày": "60 days"}
+  },
+  "doan07_clean.wav": {
+    "direction": "vi2en",
+    "domain": "Kỹ thuật (IT)",
+    "src": "Hệ thống của chúng tôi hiện tại support tích hợp qua API REST và webhook. Thời gian phản hồi trung bình là dưới 200 mili giây. Dữ liệu được mã hóa theo chuẩn AES-256 khi lưu trữ và truyền tải. Hệ thống có khả năng scale để handle tới 10 nghìn request mỗi giây. Chúng tôi cung cấp tài liệu API đầy đủ và hỗ trợ kỹ thuật 24/7.",
+    "ref": "Our system currently supports integration via REST API and webhooks. The average response time is under 200 milliseconds. Data is encrypted using the AES-256 standard both at rest and in transit. The system can scale to handle up to 10 thousand requests per second. We provide full API documentation and 24/7 technical support.",
+    "glossary": {"supports": "support", "REST API": "API REST", "webhooks": "webhook", "AES-256": "AES-256", "200 milliseconds": "200 mili giây", "scale": "scale", "handle": "handle", "10 thousand": "10 nghìn", "24/7": "24/7"}
+  },
+  "doan08_clean.wav": {
+    "direction": "en2vi",
+    "domain": "Kỹ thuật (IT)",
+    "src": "How does your platform handle data backup and disaster recovery? We perform automatic backups every 6 hours with a 99.9% uptime guarantee. Is the system compatible with, um, on-premise deployment for sensitive data? Yes, we offer both cloud and on-premise deployment options. What is the estimated onboarding time for a new client?",
+    "ref": "Nền tảng của quý vị xử lý sao lưu dữ liệu và khôi phục sau sự cố như thế nào? Chúng tôi thực hiện sao lưu tự động mỗi 6 giờ với cam kết thời gian hoạt động 99.9%. Hệ thống có tương thích với triển khai tại chỗ cho dữ liệu nhạy cảm không? Có, chúng tôi cung cấp cả tùy chọn triển khai trên đám mây và tại chỗ. Thời gian dự kiến để triển khai cho một khách hàng mới là bao lâu?",
+    "glossary": {"khôi phục sau sự cố": "disaster recovery", "6 giờ": "6 hours", "thời gian hoạt động 99.9%": "99.9% uptime", "tại chỗ": "on-premise"}
+  },
+  "doan09_clean.wav": {
+    "direction": "vi2en",
+    "domain": "Vận hành & Logistics",
+    "src": "Đơn hàng lần này gồm 500 sản phẩm, cần giao trước ngày 15 tháng 8. Thời gian sản xuất tiêu chuẩn của chúng tôi là 3 tuần. Nếu đặt hàng gấp... à không, nếu là đơn urgent, chúng tôi có thể rút ngắn xuống còn 10 ngày với phụ phí 5%. Hàng sẽ được vận chuyển bằng đường biển, dự kiến mất thêm 2 tuần. Chúng tôi sẽ gửi mã tracking đơn hàng ngay sau khi xuất kho.",
+    "ref": "This order consists of 500 units and needs to be delivered before August 15th. Our standard production time is 3 weeks. For urgent orders, we can shorten it to 10 days with a 5% surcharge. The goods will be shipped by sea, which takes an additional 2 weeks. We will send the tracking number right after the shipment leaves the warehouse.",
+    "glossary": {"500 units": "500 sản phẩm", "August 15th": "15 tháng 8", "3 weeks": "3 tuần", "urgent": "urgent", "10 days": "10 ngày", "5% surcharge": "phụ phí 5%", "tracking number": "mã tracking"}
+  },
+  "doan10_clean.wav": {
+    "direction": "en2vi",
+    "domain": "Vận hành & Logistics",
+    "src": "We need the shipment to arrive by September 1st... actually, no, make it September 5th at the latest. That timeline is tight, but we can arrange air freight instead of sea freight. Air freight would increase the cost by approximately 20%. That's acceptable, given the urgency of this order. We'll confirm the final delivery date within 24 hours.",
+    "ref": "Chúng tôi cần lô hàng đến nơi chậm nhất là ngày 5 tháng 9. Thời hạn đó khá gấp, nhưng chúng tôi có thể sắp xếp vận chuyển bằng đường hàng không thay vì đường biển. Vận chuyển đường hàng không sẽ làm tăng chi phí khoảng 20%. Điều đó chấp nhận được, vì tính cấp bách của đơn hàng này. Chúng tôi sẽ xác nhận ngày giao hàng cuối cùng trong vòng 24 giờ.",
+    "glossary": {"5 tháng 9": "September 5th", "đường hàng không": "air freight", "20%": "20%", "24 giờ": "24 hours"}
+  }
+}

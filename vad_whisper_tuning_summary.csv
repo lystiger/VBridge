@@ -1,0 +1,10 @@
+vad_preset,whisper_preset,avg_accuracy,avg_latency,total_flags
+bao_thu,chong_hallucination_manh,48.47,12.245,7
+bao_thu,mac_dinh,48.339999999999996,9.904,0
+nhay_cao,chong_hallucination_manh,48.33,12.023,16
+can_bang,chong_hallucination_manh,48.2,7.925999999999999,6
+can_bang,mac_dinh,48.2,8.654,16
+nhay_cao,mac_dinh,48.2,7.619,6
+can_bang,chat_luong_cao_cham_hon,47.62,8.246,8
+bao_thu,chat_luong_cao_cham_hon,47.55,11.317,7
+nhay_cao,chat_luong_cao_cham_hon,47.17999999999999,7.998,9
