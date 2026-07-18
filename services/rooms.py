@@ -192,8 +192,9 @@ class InMemoryRoomManager:
             return room
 
     async def broadcast(self, room_id: str, event: dict[str, Any]) -> None:
-        room = await self.get_room(room_id)
-        recipients = [item for item in room.participants.values() if item.connected]
+        async with self._lock:
+            room = self._require_room(room_id)
+            recipients = [item for item in room.participants.values() if item.connected]
         async with room.dispatch_lock:
             results = await asyncio.gather(
                 *(self._send_safe(item, event) for item in recipients), return_exceptions=True
