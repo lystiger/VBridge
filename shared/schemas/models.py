@@ -1,8 +1,64 @@
-from typing import Literal
+from datetime import datetime
+from enum import StrEnum
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
 Language = Literal["vi", "en"]
+
+
+class RoomStatus(StrEnum):
+    WAITING = "waiting"
+    READY = "ready"
+    ACTIVE = "active"
+    CLOSED = "closed"
+    EXPIRED = "expired"
+
+
+class RoomParticipant(BaseModel):
+    participant_id: str
+    display_name: str
+    source_language: Language
+    target_language: Language
+    connected: bool = False
+
+
+class CreateRoomRequest(BaseModel):
+    display_name: str = Field(min_length=1, max_length=80)
+    source_language: Language
+    target_language: Language
+
+
+class JoinRoomRequest(CreateRoomRequest):
+    room_code: str = Field(min_length=6, max_length=6)
+
+
+class RoomAccessResponse(BaseModel):
+    room_id: str
+    room_code: str
+    status: RoomStatus
+    participant: RoomParticipant
+    access_token: str
+    expires_at: datetime
+
+
+class RoomStateResponse(BaseModel):
+    room_id: str
+    room_code: str
+    status: RoomStatus
+    participant_count: int = Field(ge=0, le=2)
+    participants: list[RoomParticipant]
+    expires_at: datetime
+
+
+class RoomEvent(BaseModel):
+    type: str = Field(min_length=1, max_length=64)
+    event_id: str = Field(min_length=1, max_length=128)
+    room_id: str = Field(min_length=1)
+    participant_id: str = Field(min_length=1)
+    sequence: int = Field(ge=0)
+    timestamp: datetime
+    payload: dict[str, Any] = Field(default_factory=dict)
 
 
 class AudioRequest(BaseModel):
