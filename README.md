@@ -54,6 +54,77 @@ Create a room on one phone, share its six-character code, and join from a second
   <img src="docs/images/vbridge-room-mobile.png" width="390" alt="VBridge mobile room creation screen with language and inference mode controls">
 </p>
 
+## Mobile app (Android)
+
+<div align="center">
+
+[![Kotlin](https://img.shields.io/badge/Kotlin-2.x-7F52FF?logo=kotlin&logoColor=white)](https://kotlinlang.org/)
+[![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-Material%203-4285F4?logo=jetpackcompose&logoColor=white)](https://developer.android.com/jetpack/compose)
+[![Android](https://img.shields.io/badge/Android-SDK%2035%20·%20min%2024-3DDC84?logo=android&logoColor=white)](https://developer.android.com/)
+[![Sherpa-ONNX](https://img.shields.io/badge/On--device-Sherpa--ONNX-FF6F00)](https://github.com/k2-fsa/sherpa-onnx)
+
+</div>
+
+The two-phone experience ships as a native Android app. **VBridge for Android** is a Vietnamese ↔ English speech interpreter built for fast, natural turn-taking: it runs on-device speech recognition, translation with an automatic fallback, and speech synthesis behind a clear push-to-talk interface — no cloud round-trip required for a working conversation.
+
+> Speak Vietnamese or English, receive the translated text, and let the device speak it aloud for the other person.
+
+The full mobile source lives in this repository under **[`demo/VBridgeDemo/`](demo/VBridgeDemo/)** (Kotlin + Jetpack Compose). Large ONNX model binaries are excluded to keep the repo lean — fetch them with [`app/fetch_models.ps1`](demo/VBridgeDemo/app/fetch_models.ps1). See the [mobile README](demo/VBridgeDemo/README.md) and [beginner guide](demo/VBridgeDemo/app/doc/BEGINNER_GUIDE.md) for full detail.
+
+### What the app does
+
+| Area | Capability |
+|---|---|
+| Languages | Vietnamese ↔ English |
+| Speech recognition | On-device Sherpa-ONNX ASR models for Vietnamese and English |
+| Voice activity | Silero VAD through Sherpa-ONNX |
+| Translation | ML Kit on-device baseline; optional LAN engine with **automatic fallback** |
+| Speech synthesis | On-device Sherpa-ONNX / Piper voices for Vietnamese and English |
+| Connectivity | Solo interpreter, WebSocket room relay, or offline Bluetooth pairing |
+| Capture | Hold-to-talk and tap-to-toggle modes |
+| Floor control | Blocks local capture while a remote turn is being spoken |
+| Reliability | Local turns stay successful even if the relay is offline; ML Kit is the guaranteed fallback |
+
+The app runs in **Solo mode** (interpret a face-to-face conversation on one device) or **Room mode** (relay translated turns between two participants), with translation running **on-device** by default and an optional **remote LAN engine** that falls back to ML Kit automatically when the server is unreachable. For the strongest offline demo, use `Solo + Hands-on + On-device`.
+
+### Mobile pipeline
+
+```mermaid
+flowchart LR
+    User[Microphone / user] --> Capture[AudioCapture]
+    Capture --> VAD[Sherpa VAD]
+    VAD --> ASR[Sherpa ASR]
+    ASR --> MT[DelegatingTranslator]
+    MT --> MLKit[ML Kit]
+    MT -. Remote mode .-> LAN[LAN translator]
+    LAN -. Failure .-> MLKit
+    MT --> Event[Translated turn]
+    Event --> UI[Compose conversation UI]
+    Event --> Relay[VBridge WebSocket]
+    Relay <--> Peer[Room participant]
+    Peer --> TTS[Sherpa TTS]
+    TTS --> Playback[Audio playback]
+```
+
+Heavy work stays on `Dispatchers.Default` / `Dispatchers.IO` behind bounded coroutine channels, off the Compose main thread.
+
+### Build and run
+
+From `demo/VBridgeDemo/` (Android Studio with SDK 35, or the command line):
+
+```powershell
+# Windows — fetch models first if app/src/main/assets is empty
+powershell -ExecutionPolicy Bypass -File .\app\fetch_models.ps1
+.\gradlew.bat testDebugUnitTest assembleDebug installDebug
+```
+
+```bash
+# macOS / Linux
+./gradlew testDebugUnitTest assembleDebug installDebug
+```
+
+An ARM device (`arm64-v8a` recommended) is best — the packaged Sherpa native libraries may not load on an x86-only emulator. The debug APK lands in `app/build/outputs/apk/debug/`.
+
 ## Why
 
 Language access should not disappear with the network, and private conversations should not require sending raw audio to a third-party cloud. VBridge treats offline operation as a reliability and privacy baseline, then adds host inference as an optional quality upgrade.
@@ -396,6 +467,8 @@ VBridge/
 │   ├── api/                 # FastAPI application and endpoints
 │   ├── web/                 # React research and room clients
 │   └── android-pol/         # Android proof-of-concept
+├── demo/
+│   └── VBridgeDemo/         # Native Android app (Kotlin + Jetpack Compose)
 ├── services/                # ASR, MT, TTS, VAD, pipeline, room services
 ├── shared/                  # Contracts, configuration, logging, metrics
 ├── scripts/                 # Evaluation and demo helpers

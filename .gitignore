@@ -33,3 +33,11 @@ captures/
 # On-device Android app is developed in its own repo (VBridgeDemo) and carries large
 # native .so binaries; keep it out of the server repo. Remove this line to vendor it here.
 apps/android-pol/
+
+# Vendored mobile app (demo/VBridgeDemo): keep source + docs, exclude heavy/generated
+# model binaries and IDE state. Full models are fetched via app/fetch_models.ps1.
+demo/VBridgeDemo/.idea/
+demo/VBridgeDemo/.kotlin/
+demo/VBridgeDemo/app/.cxx/
+demo/VBridgeDemo/app/build/
+demo/VBridgeDemo/app/src/main/assets/**/espeak-ng-data/
