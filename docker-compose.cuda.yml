@@ -1,5 +1,9 @@
 services:
   api:
+    image: vbridge-api:inference-cuda
+    build:
+      context: .
+      dockerfile: docker/inference.cuda.Dockerfile
     environment:
       VBRIDGE_INFERENCE_BACKEND: cuda
     deploy:

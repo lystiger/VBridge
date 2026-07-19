@@ -27,10 +27,17 @@ def test_room_deployment_rejects_unsafe_production_settings() -> None:
         Settings(_env_file=None, deployment_environment="production")
     with pytest.raises(ValueError, match="must be 1"):
         Settings(_env_file=None, api_workers=2)
+    with pytest.raises(ValueError, match="CONVERSATION_ENCRYPTION_KEY"):
+        Settings(
+            _env_file=None,
+            deployment_environment="production",
+            room_token_secret="a-unique-production-secret",
+        )
     production = Settings(
         _env_file=None,
         deployment_environment="production",
         room_token_secret="a-unique-production-secret",
+        conversation_encryption_key="a-separate-conversation-encryption-secret",
     )
     assert production.deployment_environment == "production"
 

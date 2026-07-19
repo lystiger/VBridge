@@ -1,0 +1,14 @@
+services:
+  api:
+    image: vbridge-api:inference-cpu
+    build:
+      context: .
+      dockerfile: docker/inference.Dockerfile
+    environment:
+      VBRIDGE_INFERENCE_BACKEND: cpu
+      VBRIDGE_ASR_MODE: real
+      VBRIDGE_MT_MODE: real
+      VBRIDGE_VAD_MODE: silero
+      HF_HOME: /data/hf
+    volumes:
+      - hf-cache:/data/hf

@@ -6,6 +6,7 @@ from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 DEFAULT_ROOM_TOKEN_SECRET = "vbridge-local-room-secret-change-me"
+DEFAULT_CONVERSATION_ENCRYPTION_KEY = "vbridge-local-conversation-key-change-me"
 
 
 class Settings(BaseSettings):
@@ -40,6 +41,8 @@ class Settings(BaseSettings):
     room_max_queued_turns: int = 4
     inference_max_concurrency: int = Field(default=1, ge=1, le=32)
     inference_queue_timeout_seconds: float = Field(default=2.0, ge=0.05, le=60)
+    conversation_database_path: Path = Path(".runtime/vbridge.db")
+    conversation_encryption_key: str = DEFAULT_CONVERSATION_ENCRYPTION_KEY
 
     @model_validator(mode="after")
     def validate_room_deployment(self) -> "Settings":
@@ -50,6 +53,13 @@ class Settings(BaseSettings):
             and self.room_token_secret == DEFAULT_ROOM_TOKEN_SECRET
         ):
             raise ValueError("production requires a non-default VBRIDGE_ROOM_TOKEN_SECRET")
+        if (
+            self.deployment_environment == "production"
+            and self.conversation_encryption_key == DEFAULT_CONVERSATION_ENCRYPTION_KEY
+        ):
+            raise ValueError(
+                "production requires a non-default VBRIDGE_CONVERSATION_ENCRYPTION_KEY"
+            )
         return self
 
     @property

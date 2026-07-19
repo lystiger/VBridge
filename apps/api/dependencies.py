@@ -2,6 +2,7 @@ from datetime import timedelta
 from functools import lru_cache
 
 from services.asr import FasterWhisperASRService, MockASRService
+from services.conversations import ConversationStore
 from services.metrics import MetricsCollector
 from services.pipeline import PipelineService
 from services.room_tokens import RoomTokenService
@@ -10,6 +11,15 @@ from services.sessions import SessionManager
 from services.translation import MockTranslationService, NLLBTranslationService
 from services.tts import MockTTSService
 from shared.config import get_settings
+
+
+@lru_cache
+def get_conversation_store() -> ConversationStore:
+    settings = get_settings()
+    return ConversationStore(
+        settings.conversation_database_path,
+        settings.conversation_encryption_key,
+    )
 
 
 @lru_cache

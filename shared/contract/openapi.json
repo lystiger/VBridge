@@ -720,6 +720,165 @@
         "title": "RoomStatus",
         "type": "string"
       },
+      "SaveConversationRequest": {
+        "additionalProperties": false,
+        "description": "Explicit opt-in request to persist one translated turn.",
+        "properties": {
+          "consent": {
+            "const": true,
+            "title": "Consent",
+            "type": "boolean"
+          },
+          "protocol_version": {
+            "const": "1.0.0",
+            "default": "1.0.0",
+            "title": "Protocol Version",
+            "type": "string"
+          },
+          "retention_hours": {
+            "default": 24,
+            "maximum": 168.0,
+            "minimum": 1.0,
+            "title": "Retention Hours",
+            "type": "integer"
+          },
+          "source_language": {
+            "enum": [
+              "vi",
+              "en"
+            ],
+            "title": "Source Language",
+            "type": "string"
+          },
+          "source_text": {
+            "maxLength": 10000,
+            "minLength": 1,
+            "title": "Source Text",
+            "type": "string"
+          },
+          "target_language": {
+            "enum": [
+              "vi",
+              "en"
+            ],
+            "title": "Target Language",
+            "type": "string"
+          },
+          "translated_text": {
+            "maxLength": 10000,
+            "minLength": 1,
+            "title": "Translated Text",
+            "type": "string"
+          },
+          "turn_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Turn Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "consent",
+          "turn_id",
+          "source_language",
+          "target_language",
+          "source_text",
+          "translated_text"
+        ],
+        "title": "SaveConversationRequest",
+        "type": "object"
+      },
+      "SavedConversationListResponse": {
+        "properties": {
+          "conversations": {
+            "items": {
+              "$ref": "#/components/schemas/SavedConversationResponse"
+            },
+            "title": "Conversations",
+            "type": "array"
+          },
+          "protocol_version": {
+            "const": "1.0.0",
+            "default": "1.0.0",
+            "title": "Protocol Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "conversations"
+        ],
+        "title": "SavedConversationListResponse",
+        "type": "object"
+      },
+      "SavedConversationResponse": {
+        "properties": {
+          "conversation_id": {
+            "title": "Conversation Id",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "delete_at": {
+            "format": "date-time",
+            "title": "Delete At",
+            "type": "string"
+          },
+          "protocol_version": {
+            "const": "1.0.0",
+            "default": "1.0.0",
+            "title": "Protocol Version",
+            "type": "string"
+          },
+          "room_id": {
+            "title": "Room Id",
+            "type": "string"
+          },
+          "source_language": {
+            "enum": [
+              "vi",
+              "en"
+            ],
+            "title": "Source Language",
+            "type": "string"
+          },
+          "source_text": {
+            "title": "Source Text",
+            "type": "string"
+          },
+          "target_language": {
+            "enum": [
+              "vi",
+              "en"
+            ],
+            "title": "Target Language",
+            "type": "string"
+          },
+          "translated_text": {
+            "title": "Translated Text",
+            "type": "string"
+          },
+          "turn_id": {
+            "title": "Turn Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "conversation_id",
+          "room_id",
+          "turn_id",
+          "source_language",
+          "target_language",
+          "source_text",
+          "translated_text",
+          "created_at",
+          "delete_at"
+        ],
+        "title": "SavedConversationResponse",
+        "type": "object"
+      },
       "SessionCreateResponse": {
         "properties": {
           "session_id": {
@@ -1284,6 +1443,181 @@
           }
         },
         "summary": "Get Room State"
+      }
+    },
+    "/rooms/{room_id}/conversations": {
+      "get": {
+        "operationId": "list_conversations_rooms__room_id__conversations_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "room_id",
+            "required": true,
+            "schema": {
+              "title": "Room Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedConversationListResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Conversations"
+      },
+      "post": {
+        "operationId": "save_conversation_rooms__room_id__conversations_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "room_id",
+            "required": true,
+            "schema": {
+              "title": "Room Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveConversationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SavedConversationResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Save Conversation"
+      }
+    },
+    "/rooms/{room_id}/conversations/{conversation_id}": {
+      "delete": {
+        "operationId": "delete_conversation_rooms__room_id__conversations__conversation_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "room_id",
+            "required": true,
+            "schema": {
+              "title": "Room Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "conversation_id",
+            "required": true,
+            "schema": {
+              "title": "Conversation Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Conversation"
       }
     },
     "/sessions": {

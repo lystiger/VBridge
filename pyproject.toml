@@ -8,6 +8,7 @@ version = "0.1.0"
 description = "Local Vietnamese-English translation pipeline"
 requires-python = ">=3.12"
 dependencies = [
+  "cryptography>=43,<47",
   "fastapi>=0.115,<1",
   "pydantic-settings>=2.6,<3",
   "python-multipart>=0.0.12,<1",

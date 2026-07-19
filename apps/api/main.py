@@ -25,12 +25,14 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import ValidationError
 
 from apps.api.dependencies import (
+    get_conversation_store,
     get_metrics_collector,
     get_pipeline_service,
     get_room_manager,
     get_room_token_service,
     get_session_manager,
 )
+from services.conversations import ConversationNotFoundError, ConversationStore
 from services.metrics import MetricsCollector
 from services.pipeline import PipelineOverloadedError, PipelineService
 from services.room_tokens import ExpiredTokenError, InvalidTokenError, RoomTokenService
@@ -72,6 +74,9 @@ from shared.schemas import (
     PipelineResponse,
     RoomAccessResponse,
     RoomStateResponse,
+    SaveConversationRequest,
+    SavedConversationListResponse,
+    SavedConversationResponse,
     SessionCreateResponse,
     TranslationRequest,
     TranslationResponse,
@@ -366,6 +371,54 @@ async def get_room_state(
     if claims["participant_id"] not in room.participants:
         raise HTTPException(status_code=401, detail={"code": "INVALID_TOKEN"})
     return manager.state(room)
+
+
+@app.post(
+    "/rooms/{room_id}/conversations",
+    response_model=SavedConversationResponse,
+    status_code=201,
+)
+async def save_conversation(
+    room_id: str,
+    request: SaveConversationRequest,
+    token_service: Annotated[RoomTokenService, Depends(get_room_token_service)],
+    store: Annotated[ConversationStore, Depends(get_conversation_store)],
+    authorization: Annotated[str | None, Header()] = None,
+) -> SavedConversationResponse:
+    claims = verify_bearer(authorization, token_service, room_id)
+    return await store.save(room_id, str(claims["participant_id"]), request)
+
+
+@app.get(
+    "/rooms/{room_id}/conversations",
+    response_model=SavedConversationListResponse,
+)
+async def list_conversations(
+    room_id: str,
+    token_service: Annotated[RoomTokenService, Depends(get_room_token_service)],
+    store: Annotated[ConversationStore, Depends(get_conversation_store)],
+    authorization: Annotated[str | None, Header()] = None,
+) -> SavedConversationListResponse:
+    claims = verify_bearer(authorization, token_service, room_id)
+    conversations = await store.list_for_owner(room_id, str(claims["participant_id"]))
+    return SavedConversationListResponse(conversations=conversations)
+
+
+@app.delete("/rooms/{room_id}/conversations/{conversation_id}", status_code=204)
+async def delete_conversation(
+    room_id: str,
+    conversation_id: str,
+    token_service: Annotated[RoomTokenService, Depends(get_room_token_service)],
+    store: Annotated[ConversationStore, Depends(get_conversation_store)],
+    authorization: Annotated[str | None, Header()] = None,
+) -> None:
+    claims = verify_bearer(authorization, token_service, room_id)
+    try:
+        await store.delete(conversation_id, room_id, str(claims["participant_id"]))
+    except ConversationNotFoundError as exc:
+        raise HTTPException(
+            status_code=404, detail={"code": "CONVERSATION_NOT_FOUND"}
+        ) from exc
 
 
 @app.delete("/rooms/{room_id}", status_code=204)

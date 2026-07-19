@@ -114,6 +114,51 @@ sequenceDiagram
 
 In **device mode**, the phone sends an already-computed `translation.result`; the host skips the pipeline and relays the validated event to both participants.
 
+### Optional encrypted conversation history
+
+Conversation persistence is **off by default**. A participant must explicitly submit
+`consent: true` for each turn they choose to save. VBridge stores only an encrypted JSON payload;
+room and owner identifiers plus retention timestamps remain queryable so ownership and automatic
+deletion can be enforced. Audio is never written to this database.
+
+```mermaid
+erDiagram
+    SAVED_CONVERSATIONS {
+        text conversation_id PK
+        text room_id "queryable metadata"
+        text owner_participant_id "queryable metadata"
+        blob nonce "96-bit AES-GCM nonce"
+        blob encrypted_content "turn, languages, transcript, translation"
+        text created_at
+        text delete_at "retention deadline"
+    }
+```
+
+```mermaid
+sequenceDiagram
+    participant P as Authenticated participant
+    participant A as VBridge API
+    participant E as AES-GCM encryption
+    participant D as SQLite
+
+    P->>A: POST saved turn + consent=true + retention_hours
+    A->>A: Verify room token and bind owner
+    A->>E: Encrypt transcript and translation
+    E-->>A: nonce + authenticated ciphertext
+    A->>D: INSERT metadata + ciphertext
+    D-->>A: conversation_id and delete_at
+    A-->>P: Saved turn response
+    Note over A,D: Expired rows are deleted before history reads
+    P->>A: DELETE owned saved turn
+    A->>D: Owner-scoped permanent delete
+```
+
+SQLite indexes support `(owner_participant_id, created_at DESC)` history reads and `delete_at`
+retention cleanup. Production requires an independent
+`VBRIDGE_CONVERSATION_ENCRYPTION_KEY`; rotating it without re-encryption makes existing records
+unreadable. This database is deliberately not used for room coordination, so the API must still run
+with one worker until room state moves to shared storage.
+
 ### Technology
 
 | Layer | Implementation |
@@ -216,9 +261,9 @@ Evaluate MT twice: first with gold reference text to isolate translation quality
 
 ### Quick start
 
-#### Full inference stack
+#### Lightweight relay stack
 
-You need [Docker with Compose](https://docs.docker.com/compose/install/). The default CPU stack downloads roughly 2.5 GB of model weights into a persistent `hf-cache` volume on first use.
+You need [Docker with Compose](https://docs.docker.com/compose/install/). The default image is intentionally small: it runs rooms, authentication, encrypted history, device relay, and mock pipeline checks without installing PyTorch or downloading models.
 
 ```bash
 git clone <your-repository-url>
@@ -232,26 +277,38 @@ Open:
 - API: <http://localhost:8000>
 - Interactive OpenAPI docs: <http://localhost:8000/docs>
 
-#### Fast mock demo
+#### CPU inference stack
 
-Use this mode to explore the complete product and transport flow without downloading models.
-
-**PowerShell**
+The inference override swaps only the API image while preserving the same service name, proxy,
+ports, room contract, database, and volumes. Model weights download on first initialization and stay
+in the persistent `hf-cache` volume.
 
 ```powershell
-$env:VBRIDGE_EXTRAS=""
-$env:VBRIDGE_ASR_MODE="mock"
-$env:VBRIDGE_MT_MODE="mock"
-$env:VBRIDGE_VAD_MODE="energy"
-docker compose up --build
+docker compose -f docker-compose.yml -f docker-compose.inference.yml build api
+docker compose -f docker-compose.yml -f docker-compose.inference.yml up -d
 ```
 
-**Bash**
+#### CUDA inference stack
 
-```bash
-VBRIDGE_EXTRAS= VBRIDGE_ASR_MODE=mock VBRIDGE_MT_MODE=mock \
-VBRIDGE_VAD_MODE=energy docker compose up --build
+This path requires Docker's NVIDIA runtime and a compatible NVIDIA driver:
+
+```powershell
+docker compose `
+  -f docker-compose.yml `
+  -f docker-compose.inference.yml `
+  -f docker-compose.cuda.yml `
+  build api
+
+docker compose `
+  -f docker-compose.yml `
+  -f docker-compose.inference.yml `
+  -f docker-compose.cuda.yml `
+  up -d
 ```
+
+The packaging roles are explicit: `docker/api.Dockerfile` is the lightweight control plane,
+`docker/inference.Dockerfile` adds the CPU model stack, and
+`docker/inference.cuda.Dockerfile` adds the CUDA/cuDNN runtime and CUDA PyTorch wheels.
 
 #### Local development
 
@@ -294,6 +351,9 @@ VITE_API_URL=http://192.168.1.10:8000 docker compose up --build
 | `GET` | `/health` | Service health |
 | `GET` | `/metrics` | Average stage and total latency |
 | `GET` | `/metrics/prometheus` | Prometheus-compatible load and inference metrics |
+| `POST` | `/rooms/{room_id}/conversations` | Explicitly save one encrypted translated turn |
+| `GET` | `/rooms/{room_id}/conversations` | List the authenticated participant's saved turns |
+| `DELETE` | `/rooms/{room_id}/conversations/{conversation_id}` | Permanently delete an owned saved turn |
 | `POST` | `/asr` | Speech recognition |
 | `POST` | `/translation` | Vietnamese ↔ English translation |
 | `POST` | `/tts` | Speech synthesis |
@@ -352,6 +412,7 @@ ruff check .
 pytest
 cd apps/web && npm run build && npm run lint
 docker compose build
+docker compose -f docker-compose.yml -f docker-compose.inference.yml build api
 ```
 
 ## AI Singapore challenge checklist

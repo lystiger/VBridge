@@ -1,30 +1,29 @@
 services:
   api:
+    image: vbridge-api:relay
     build:
       context: .
       dockerfile: docker/api.Dockerfile
-      args:
-        # Real inference by default. For a fast mock stack:
-        #   VBRIDGE_EXTRAS= VBRIDGE_ASR_MODE=mock VBRIDGE_MT_MODE=mock VBRIDGE_VAD_MODE=energy \
-        #     docker compose up --build
-        VBRIDGE_EXTRAS: ${VBRIDGE_EXTRAS-[audio,asr,mt,vad]}
     environment:
       VBRIDGE_AUDIO_OUTPUT_DIR: /data/audio
       VBRIDGE_CORS_ORIGINS: http://localhost:5173
-      VBRIDGE_INFERENCE_BACKEND: ${VBRIDGE_INFERENCE_BACKEND:-cpu}
-      VBRIDGE_ASR_MODE: ${VBRIDGE_ASR_MODE:-real}
-      VBRIDGE_MT_MODE: ${VBRIDGE_MT_MODE:-real}
+      VBRIDGE_DEPLOYMENT_ENVIRONMENT: ${VBRIDGE_DEPLOYMENT_ENVIRONMENT:-development}
+      VBRIDGE_ROOM_TOKEN_SECRET: ${VBRIDGE_ROOM_TOKEN_SECRET:-vbridge-local-room-secret-change-me}
+      VBRIDGE_INFERENCE_BACKEND: cpu
+      VBRIDGE_ASR_MODE: mock
+      VBRIDGE_MT_MODE: mock
       VBRIDGE_TTS_MODE: mock
       # Room state is process-local; this must remain one until shared storage is added.
       VBRIDGE_API_WORKERS: 1
-      VBRIDGE_VAD_MODE: ${VBRIDGE_VAD_MODE:-silero}
+      VBRIDGE_VAD_MODE: energy
       VBRIDGE_INFERENCE_MAX_CONCURRENCY: ${VBRIDGE_INFERENCE_MAX_CONCURRENCY:-1}
       VBRIDGE_INFERENCE_QUEUE_TIMEOUT_SECONDS: ${VBRIDGE_INFERENCE_QUEUE_TIMEOUT_SECONDS:-2}
-      HF_HOME: /data/hf
+      VBRIDGE_CONVERSATION_DATABASE_PATH: /data/db/vbridge.db
+      VBRIDGE_CONVERSATION_ENCRYPTION_KEY: ${VBRIDGE_CONVERSATION_ENCRYPTION_KEY:-vbridge-local-conversation-key-change-me}
     ports: ["8000:8000"]
     volumes:
       - audio-data:/data/audio
-      - hf-cache:/data/hf
+      - conversation-data:/data/db
     healthcheck:
       # /health does not load models, so it passes quickly even for the real image.
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
@@ -43,4 +42,5 @@ services:
       api: { condition: service_healthy }
 volumes:
   audio-data:
+  conversation-data:
   hf-cache:

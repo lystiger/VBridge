@@ -69,6 +69,39 @@ class RoomStateResponse(BaseModel):
     expires_at: datetime
 
 
+class SaveConversationRequest(BaseModel):
+    """Explicit opt-in request to persist one translated turn."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    protocol_version: ProtocolVersion = PROTOCOL_VERSION
+    consent: Literal[True]
+    turn_id: str = Field(min_length=1, max_length=128)
+    source_language: Language
+    target_language: Language
+    source_text: str = Field(min_length=1, max_length=10_000)
+    translated_text: str = Field(min_length=1, max_length=10_000)
+    retention_hours: int = Field(default=24, ge=1, le=168)
+
+
+class SavedConversationResponse(BaseModel):
+    protocol_version: ProtocolVersion = PROTOCOL_VERSION
+    conversation_id: str
+    room_id: str
+    turn_id: str
+    source_language: Language
+    target_language: Language
+    source_text: str
+    translated_text: str
+    created_at: datetime
+    delete_at: datetime
+
+
+class SavedConversationListResponse(BaseModel):
+    protocol_version: ProtocolVersion = PROTOCOL_VERSION
+    conversations: list[SavedConversationResponse]
+
+
 class RoomEvent(BaseModel):
     """Common server-event envelope.
 
