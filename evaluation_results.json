@@ -1,0 +1,68 @@
+{
+  "config": {
+    "eval_num_beams": 4,
+    "num_test_sentences": 500,
+    "total_test_available": 19151,
+    "both_directions": true
+  },
+  "teacher": {
+    "model_label": "Teacher (NLLB-600M gốc)",
+    "model_path": "facebook/nllb-200-distilled-600M",
+    "num_params_millions": 615.1,
+    "num_test_sentences": 500,
+    "eval_num_beams": 4,
+    "bleu_vi_en": 30.25,
+    "avg_latency_ms_vi_en": 705.6,
+    "p95_latency_ms_vi_en": 1266.4,
+    "bleu_en_vi": 34.15,
+    "avg_latency_ms_en_vi": 821.4,
+    "p95_latency_ms_en_vi": 1567.9
+  },
+  "student": {
+    "model_label": "Student (fine-tune domain)",
+    "model_path": "student_model_checkpoint/final",
+    "num_params_millions": 615.1,
+    "num_test_sentences": 500,
+    "eval_num_beams": 4,
+    "bleu_vi_en": 29.81,
+    "avg_latency_ms_vi_en": 713.9,
+    "p95_latency_ms_vi_en": 1271.5,
+    "bleu_en_vi": 33.98,
+    "avg_latency_ms_en_vi": 805.5,
+    "p95_latency_ms_en_vi": 1496.6
+  },
+  "bleu_delta_vi_en": -0.44,
+  "sample_translations": [
+    {
+      "source_vi": "Anh Albert Barnett và chị Susan Barnett, thuộc hội thánh West ở Tuscaloosa, Alabama",
+      "reference_en": "Brother Albert Barnett and his wife, Sister Susan Barnett, from the West Congregation in Tuscaloosa, Alabama",
+      "teacher_output": "Albert and Susan Barnett of the West Congregation in Tuscaloosa, Alabama",
+      "student_output": "Albert and Susan Barnett, of the West Congregation in Tuscaloosa, Alabama"
+    },
+    {
+      "source_vi": "Ngày 11 và 12-1-2020, những cơn bão lớn đã quét qua và phá huỷ nhiều vùng ở miền nam và miền trung Hoa Kỳ.",
+      "reference_en": "Severe storms ripped through parts of the southern and midwestern United States on January 11 and 12, 2020.",
+      "teacher_output": "On 11 and 12-2020, major storms swept through and devastated much of the southern and central United States.",
+      "student_output": "On 11 and 12-2020, major storms swept through and devastated many areas of the southern and central United States."
+    },
+    {
+      "source_vi": "Những trận mưa to và gió lớn trong suốt hai ngày cùng với nhiều cơn lốc xoáy đã gây thiệt hại nặng nề cho nhiều bang.",
+      "reference_en": "Two days of heavy rain, high winds, and numerous tornadoes caused major damage across multiple states.",
+      "teacher_output": "Heavy rains and strong winds over the course of two days along with numerous hurricanes have caused heavy damage to many states.",
+      "student_output": "Heavy rains and strong winds over two days along with many hurricanes caused heavy damage to many states."
+    },
+    {
+      "source_vi": "Đáng buồn là anh Albert Barnett 85 tuổi, và vợ anh là chị Susan Barnett 75 tuổi đã thiệt mạng do một cơn lốc xoáy quét qua nhà họ.",
+      "reference_en": "Sadly, Brother Albert Barnett and his wife, Sister Susan Barnett, 85 and 75 years old respectively, were killed when a tornado struck their mobile home.",
+      "teacher_output": "Sadly, 85-year-old Albert Barnett and his 75-year-old wife, Susan Barnett, died as a result of a tornado sweeping through their home.",
+      "student_output": "Sadly, Albert Barnett, 85, and his wife, Susan Barnett, 75, died as a result of a tornado sweeping through their home."
+    },
+    {
+      "source_vi": "Chi nhánh Hoa Kỳ cũng cho biết có ít nhất bốn căn nhà của anh em chúng tôi và hai Phòng Nước Trời bị hư hại nhẹ.",
+      "reference_en": "The United States branch also reports that at least four of our brothers' homes sustained minor damage, along with two Kingdom Halls.",
+      "teacher_output": "The United States branch also reported that at least four of our brothers' homes and two Kingdom Halls suffered minor damage.",
+      "student_output": "The United States branch also reported that at least four homes of our brothers and two Kingdom Halls were slightly damaged."
+    }
+  ],
+  "note": "Teacher/student cùng kiến trúc 600M - distillation ở đây nhằm chuyên biệt hoá domain, không nhằm nén model. Số liệu nén/tăng tốc lấy từ bước quantize INT8 trong export_onnx.py."
+}
