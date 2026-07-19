@@ -1867,12 +1867,16 @@
   "eos_token": "</s>",
   "legacy_behaviour": false,
   "mask_token": "<mask>",
+  "max_length": 128,
   "model_max_length": 1024,
   "pad_token": "<pad>",
   "sep_token": "</s>",
   "sp_model_kwargs": {},
   "src_lang": "vie_Latn",
+  "stride": 0,
   "tgt_lang": "eng_Latn",
   "tokenizer_class": "NllbTokenizer",
+  "truncation_side": "right",
+  "truncation_strategy": "longest_first",
   "unk_token": "<unk>"
 }

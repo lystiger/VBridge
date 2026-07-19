@@ -1,5 +1,5 @@
 {
-  "_name_or_path": "facebook/nllb-200-distilled-600M",
+  "_name_or_path": "student_model_checkpoint/final/",
   "activation_dropout": 0.0,
   "activation_function": "relu",
   "architectures": [
